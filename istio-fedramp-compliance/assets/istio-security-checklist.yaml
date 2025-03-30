@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: istio-fedramp-checklist
+  namespace: default
+data:
+  checklist.md: |
+    # Istio Service Mesh FedRAMP Compliance Checklist
+
+    ## Installation and Configuration
+    
+    - [ ] Istio installed with secure configuration settings
+    - [ ] Control plane secured with mutual TLS
+    - [ ] Modern TLS versions (1.2+) and secure cipher suites enforced
+    - [ ] Access logging enabled for audit trail
+    - [ ] Resource limits configured to prevent DoS
+    - [ ] Control plane components run with least privilege
+
+    ## Authentication
+    
+    - [ ] Global PeerAuthentication policy enforcing strict mTLS
+    - [ ] WorkloadSpecific PeerAuthentication policies as needed
+    - [ ] RequestAuthentication configured for JWT validation
+    - [ ] JWTs enforced with AuthorizationPolicy
+    - [ ] Certificate rotation periods configured appropriately
+    - [ ] Certificate validation enabled
+
+    ## Authorization
+    
+    - [ ] Default deny policies implemented
+    - [ ] Service-to-service authorization based on identity
+    - [ ] Path-based and method-based access controls
+    - [ ] Attribute-based access control for fine-grained authorization
+    - [ ] Source IP restrictions where appropriate
+    - [ ] Regular authorization policy audit and review
+
+    ## Network Security
+    
+    - [ ] Gateway configuration secured
+    - [ ] External traffic properly routed through ingress gateway
+    - [ ] VirtualServices configured with appropriate routing rules
+    - [ ] DestinationRules enforcing TLS settings
+    - [ ] Egress traffic controls implemented
+    - [ ] Network resilience features enabled
+
+    ## Monitoring and Audit
+    
+    - [ ] Prometheus configured for metrics collection
+    - [ ] Grafana dashboards for security monitoring
+    - [ ] Kiali configured for service mesh visualization
+    - [ ] Alerts configured for security events
+    - [ ] Audit logging retained for required period
+    - [ ] Regular security scanning of service mesh configuration
+
+    ## Compliance Documentation
+    
+    - [ ] Service mesh architecture documented
+    - [ ] Security controls mapped to FedRAMP requirements
+    - [ ] Evidence of control implementation collected
+    - [ ] Continuous monitoring strategy documented
+    - [ ] Incident response procedures established
+    - [ ] Configuration management procedures documented
