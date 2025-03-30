@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: linkerd-fedramp-checklist
+  namespace: default
+data:
+  checklist.md: |
+    # Linkerd Service Mesh FedRAMP Compliance Checklist
+
+    ## Installation and Configuration
+    
+    - [ ] Install Linkerd CLI and verify cluster compatibility
+    - [ ] Install Linkerd control plane with security-enhanced configuration
+    - [ ] Configure shorter certificate lifetimes for compliance with IA-5
+    - [ ] Enable policy controller for AC-3/AC-4 compliance
+    - [ ] Implement resource limits to prevent DoS
+    - [ ] Verify installation with linkerd check
+
+    ## Authentication and Encryption
+    
+    - [ ] Verify automatic mTLS is enabled for all meshed services
+    - [ ] Confirm certificate issuance and rotation is working
+    - [ ] Validate TLS version and cipher suite strength
+    - [ ] Ensure all services have proper identity configuration
+    - [ ] Verify identity binding to Kubernetes service accounts
+
+    ## Authorization and Access Control
+    
+    - [ ] Create Server resources for each protected service
+    - [ ] Implement ServerAuthorization policies based on service identity
+    - [ ] Define HTTPRoute resources for path and method control
+    - [ ] Validate policy enforcement through testing
+    - [ ] Document authorization model and implementation
+
+    ## Monitoring and Audit
+    
+    - [ ] Install Linkerd viz extension for metrics and monitoring
+    - [ ] Configure traffic tap for detailed communication logging
+    - [ ] Setup alerting for security-relevant events
+    - [ ] Implement periodic security auditing
+    - [ ] Ensure audit data retention meets compliance requirements
+
+    ## Documentation and Evidence
+    
+    - [ ] Map Linkerd controls to NIST 800-53 requirements
+    - [ ] Generate audit reports for compliance evidence
+    - [ ] Document service mesh architecture and security model
+    - [ ] Create remediation plan for any identified gaps
+    - [ ] Prepare content for FedRAMP System Security Plan (SSP)
+
+    ## Operational Security
+    
+    - [ ] Establish processes for Linkerd upgrades
+    - [ ] Define procedures for incident response
+    - [ ] Configure backup and recovery procedures
+    - [ ] Document certificate management procedures
+    - [ ] Implement continuous compliance validation
