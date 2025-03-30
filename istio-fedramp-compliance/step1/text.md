@@ -99,21 +99,22 @@ spec:
 EOF
 ```{{exec}}
 
-## Task 4: Configure Security Monitoring (Optional)
+## Task 4: Configure Security Monitoring
 
-FedRAMP requires comprehensive security monitoring (AU-2, AU-12, SI-4). In a production environment, you would set up monitoring for your Istio mesh. For demonstration purposes, we'll skip this step in our lab environment, but in a real FedRAMP environment you would run:
-
-```bash
-# Note: This is for reference only - we'll skip this in our lab
-# Enable Istio Prometheus and Grafana addons
-# kubectl apply -f samples/addons/prometheus.yaml
-# kubectl apply -f samples/addons/grafana.yaml
-# kubectl apply -f samples/addons/kiali.yaml
-```
-
-Let's instead verify that our Istio control plane is ready:
+FedRAMP requires comprehensive security monitoring (AU-2, AU-12, SI-4). Let's set up monitoring for our Istio mesh to meet these requirements:
 
 ```bash
+# Download the monitoring addons manifests
+curl -L https://raw.githubusercontent.com/istio/istio/release-1.17/samples/addons/prometheus.yaml -o prometheus.yaml
+curl -L https://raw.githubusercontent.com/istio/istio/release-1.17/samples/addons/grafana.yaml -o grafana.yaml
+curl -L https://raw.githubusercontent.com/istio/istio/release-1.17/samples/addons/kiali.yaml -o kiali.yaml
+
+# Apply the monitoring components
+kubectl apply -f prometheus.yaml
+kubectl apply -f grafana.yaml
+kubectl apply -f kiali.yaml
+
+# Verify that monitoring pods are being created
 kubectl get pods -n istio-system
 ```{{exec}}
 
@@ -135,6 +136,12 @@ Let's verify that our secure-apps namespace is properly configured:
 
 ```bash
 kubectl get namespace secure-apps --show-labels
+```{{exec}}
+
+And check that our monitoring components are deployed:
+
+```bash
+kubectl get pods -n istio-system | grep -E 'prometheus|grafana|kiali'
 ```{{exec}}
 
 Note: You might see an informational message about the default namespace not being Istio-injection enabled. This is expected and not an error, since we're only using the secure-apps namespace for our application deployment.
