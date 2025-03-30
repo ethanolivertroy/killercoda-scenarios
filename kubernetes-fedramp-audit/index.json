@@ -1,0 +1,42 @@
+{
+  "title": "Kubernetes FedRAMP Security Audit",
+  "description": "Learn how to assess Kubernetes deployments for FedRAMP compliance using NIST standards and security best practices",
+  "details": {
+    "intro": {
+      "text": "intro.md"
+    },
+    "steps": [
+      {
+        "title": "Audit Kubernetes RBAC Configuration",
+        "text": "step1/text.md",
+        "verify": "step1/verify.sh"
+      },
+      {
+        "title": "Assess Pod Security Standards Compliance",
+        "text": "step2/text.md",
+        "verify": "step2/verify.sh"
+      },
+      {
+        "title": "Validate Network Policies and Security Context",
+        "text": "step3/text.md",
+        "verify": "step3/verify.sh"
+      }
+    ],
+    "finish": {
+      "text": "finish.md"
+    },
+    "assets": {
+      "host01": [
+        {"file": "non-compliant-deployment.yaml", "target": "/root", "chmod": "+w"},
+        {"file": "compliance-checklist.yaml", "target": "/root", "chmod": "+w"},
+        {"file": "audit-tool.sh", "target": "/root", "chmod": "+x"},
+        {"file": "authoritative-references.md", "target": "/root", "chmod": "+w"},
+        {"file": "compliance-examples.md", "target": "/root", "chmod": "+w"},
+        {"file": "kubernetes-security-case-studies.md", "target": "/root", "chmod": "+w"}
+      ]
+    }
+  },
+  "backend": {
+    "imageid": "kubernetes-kubeadm-2nodes"
+  }
+}

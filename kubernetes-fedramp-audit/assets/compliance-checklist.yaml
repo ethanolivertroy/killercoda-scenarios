@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fedramp-compliance-checklist
+  namespace: default
+data:
+  checklist.md: |
+    # Kubernetes FedRAMP Compliance Checklist
+
+    ## Access Control (AC)
+    
+    - [ ] AC-2: Implement proper RBAC with minimal permissions
+    - [ ] AC-3: Enforce mandatory access control
+    - [ ] AC-4: Control information flow with Network Policies
+    - [ ] AC-6: Follow principle of least privilege
+
+    ## Audit and Accountability (AU)
+    
+    - [ ] AU-2: Implement audit logging
+    - [ ] AU-3: Ensure logs contain required content
+    - [ ] AU-12: Enable audit record generation
+
+    ## Configuration Management (CM)
+    
+    - [ ] CM-2: Document baseline configurations
+    - [ ] CM-6: Implement security configuration settings
+    - [ ] CM-7: Restrict to least functionality
+
+    ## System and Communications Protection (SC)
+    
+    - [ ] SC-7: Enforce boundary protection with Network Policies
+    - [ ] SC-8: Protect transmission confidentiality with TLS
+    - [ ] SC-12: Establish cryptographic key management
+    - [ ] SC-13: Use FIPS-validated cryptography
+
+    ## Identification and Authentication (IA)
+    
+    - [ ] IA-2: Implement multi-factor authentication
+    - [ ] IA-5: Manage authenticators properly
+    - [ ] IA-7: Use FIPS-validated authentication
+
+    ## System and Information Integrity (SI)
+    
+    - [ ] SI-2: Apply security patches promptly
+    - [ ] SI-4: Implement monitoring tools
+    - [ ] SI-7: Monitor software integrity
