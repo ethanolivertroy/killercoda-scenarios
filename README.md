@@ -15,7 +15,7 @@ This scenario teaches security professionals and auditors how to assess Kubernet
 **What You'll Learn:**
 - How to audit Kubernetes RBAC for principle of least privilege
 - How to assess Pod Security Standards compliance 
-- How to validate Network Policies and security contexts
+- How to validate Network Policies and sI tecurity contexts
 - How to generate compliance reports for FedRAMP documentation
 
 [Run This Scenario](https://killercoda.com/ethanolivertroy/scenario/kubernetes-fedramp-audit)
