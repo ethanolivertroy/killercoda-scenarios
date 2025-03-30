@@ -18,7 +18,7 @@ This scenario teaches security professionals and auditors how to assess Kubernet
 - How to validate Network Policies and security contexts
 - How to generate compliance reports for FedRAMP documentation
 
-[Run This Scenario](https://killercoda.com/your-username/kubernetes-fedramp-audit)
+[Run This Scenario](https://killercoda.com/ethanolivertroy/scenario/kubernetes-fedramp-audit)
 
 ### 2. Istio Service Mesh Security for FedRAMP Compliance
 
@@ -34,7 +34,7 @@ This scenario teaches how to implement and assess security controls in Istio ser
 - How to implement authentication and authorization controls
 - How to audit service mesh security for compliance evidence
 
-[Run This Scenario](https://killercoda.com/your-username/istio-fedramp-compliance)
+[Run This Scenario](https://killercoda.com/ethanolivertroy/scenario/istio-fedramp-compliance)
 
 ## Compliance Frameworks Covered
 
