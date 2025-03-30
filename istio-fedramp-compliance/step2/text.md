@@ -165,9 +165,33 @@ spec:
 EOF
 ```{{exec}}
 
-## Task 4: Implement JWT Authentication for API Access
+## Task 4: Verify JWT Authentication for API Access
 
-FedRAMP requires multi-factor authentication for privileged access (IA-2). In a service mesh, we can implement JWT authentication for API access:
+FedRAMP requires multi-factor authentication for privileged access (IA-2). We've already implemented JWT authentication for API access with the RequestAuthentication resource we created earlier.
+
+Let's verify that our JWT authentication is properly configured:
+
+```bash
+kubectl get requestauthentication -n secure-apps
+```{{exec}}
+
+This confirms that the backend service is configured to validate JWTs issued by "testing@secure.istio.io".
+
+## Task 5: Test Authentication Controls
+
+Let's test our JWT authentication policy:
+
+```bash
+# Get the frontend pod name
+FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath={.items..metadata.name})
+
+# Access backend without JWT (should still work within the mesh due to mTLS)
+kubectl exec -n secure-apps $FRONTEND_POD -- curl -s http://backend:80/headers
+```{{exec}}
+
+The request should succeed since it's coming from within the mesh with valid mTLS.
+
+Now, let's first create a RequestAuthentication resource to define how JWTs should be validated:
 
 ```bash
 cat << EOF | kubectl apply -f -
@@ -186,23 +210,7 @@ spec:
 EOF
 ```{{exec}}
 
-This configures the backend service to require valid JWTs issued by "testing@secure.istio.io".
-
-## Task 5: Test Authentication Controls
-
-Let's test our JWT authentication policy:
-
-```bash
-# Get the frontend pod name
-FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath={.items..metadata.name})
-
-# Access backend without JWT (should still work within the mesh due to mTLS)
-kubectl exec -n secure-apps $FRONTEND_POD -- curl -s http://backend:80/headers
-```{{exec}}
-
-The request should succeed since it's coming from within the mesh with valid mTLS.
-
-Now let's add an AuthorizationPolicy to enforce JWT validation:
+Next, we'll add an AuthorizationPolicy to enforce the JWT validation:
 
 ```bash
 cat << EOF | kubectl apply -f -
@@ -217,7 +225,10 @@ spec:
       app: backend
   action: ALLOW
   rules:
-  - when:
+  - from:
+    - source:
+        requestPrincipals: ["*"]
+    when:
     - key: request.auth.claims[iss]
       values: ["testing@secure.istio.io"]
 EOF
