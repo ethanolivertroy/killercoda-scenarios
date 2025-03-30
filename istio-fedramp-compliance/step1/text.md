@@ -126,16 +126,18 @@ Let's verify our security configuration by checking the mTLS status:
 kubectl get peerauthentication -A
 
 # Validate that mTLS is enabled for the mesh
-istioctl analyze -k --failure-threshold=Error
+istioctl analyze -n secure-apps --failure-threshold=Error
 ```{{exec}}
 
 This command should confirm that our Istio installation requires strict mTLS for service-to-service communication.
 
-And verify that our secure-apps namespace is properly configured:
+Let's verify that our secure-apps namespace is properly configured:
 
 ```bash
 kubectl get namespace secure-apps --show-labels
 ```{{exec}}
+
+Note: You might see an informational message about the default namespace not being Istio-injection enabled. This is expected and not an error, since we're only using the secure-apps namespace for our application deployment.
 
 ## NIST Compliance Check
 
