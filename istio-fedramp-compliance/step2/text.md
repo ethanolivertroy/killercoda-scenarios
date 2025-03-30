@@ -172,10 +172,16 @@ FedRAMP requires multi-factor authentication for privileged access (IA-2). We've
 Let's verify that our JWT authentication is properly configured:
 
 ```bash
+# Check if RequestAuthentication is applied
 kubectl get requestauthentication -n secure-apps
+kubectl get requestauthentication -n secure-apps -o yaml
+
+# Check if AuthorizationPolicy is applied
+kubectl get authorizationpolicy -n secure-apps
+kubectl get authorizationpolicy -n secure-apps -o yaml
 ```{{exec}}
 
-This confirms that the backend service is configured to validate JWTs issued by "testing@secure.istio.io".
+This confirms that the backend service is configured to validate JWTs issued by "testing@secure.istio.io" and enforce JWT validation through the AuthorizationPolicy.
 
 ## Task 5: Test Authentication Controls
 
@@ -191,10 +197,10 @@ kubectl exec -n secure-apps $FRONTEND_POD -- curl -s http://backend:80/headers
 
 The request should succeed since it's coming from within the mesh with valid mTLS.
 
-Now, let's first create a RequestAuthentication resource to define how JWTs should be validated:
+Now, let's first create a RequestAuthentication resource to define how JWTs should be validated. We'll save it to a file and then apply it for better reliability:
 
 ```bash
-cat << EOF | kubectl apply -f -
+cat << EOF > /root/request-auth.yaml
 apiVersion: security.istio.io/v1beta1
 kind: RequestAuthentication
 metadata:
@@ -208,12 +214,14 @@ spec:
   - issuer: "testing@secure.istio.io"
     jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.17/security/tools/jwt/samples/jwks.json"
 EOF
+
+kubectl apply -f /root/request-auth.yaml
 ```{{exec}}
 
 Next, we'll add an AuthorizationPolicy to enforce the JWT validation:
 
 ```bash
-cat << EOF | kubectl apply -f -
+cat << EOF > /root/auth-policy.yaml
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
@@ -232,6 +240,24 @@ spec:
     - key: request.auth.claims[iss]
       values: ["testing@secure.istio.io"]
 EOF
+
+kubectl apply -f /root/auth-policy.yaml
+
+# Create a default deny policy for secure-apps namespace
+cat << EOF > /root/default-deny.yaml
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: default-deny
+  namespace: secure-apps
+spec:
+  {}
+EOF
+
+kubectl apply -f /root/default-deny.yaml
+
+# Verify the resources were created
+kubectl get requestauthentication,authorizationpolicy -n secure-apps
 ```{{exec}}
 
 Now try to access the backend without a JWT:
