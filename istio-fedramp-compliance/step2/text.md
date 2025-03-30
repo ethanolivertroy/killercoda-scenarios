@@ -47,7 +47,8 @@ spec:
       serviceAccountName: frontend
       containers:
       - name: httpbin
-        image: docker.io/kennethreitz/httpbin
+        image: curlimages/curl:7.83.1
+        command: ["sleep", "infinity"]
         ports:
         - containerPort: 80
 ---
@@ -196,7 +197,7 @@ Let's test our JWT authentication policy:
 FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath={.items..metadata.name})
 
 # Access backend without JWT (should still work within the mesh due to mTLS)
-kubectl exec -n secure-apps $FRONTEND_POD -c httpbin -- curl -s http://backend:80/headers
+kubectl exec -n secure-apps $FRONTEND_POD -- curl -s http://backend:80/headers
 ```{{exec}}
 
 The request should succeed since it's coming from within the mesh with valid mTLS.
@@ -225,7 +226,7 @@ EOF
 Now try to access the backend without a JWT:
 
 ```bash
-kubectl exec -n secure-apps $FRONTEND_POD -c httpbin -- curl -s http://backend:80/headers
+kubectl exec -n secure-apps $FRONTEND_POD -- curl -s http://backend:80/headers
 ```{{exec}}
 
 The request should now be denied, as we're now enforcing JWT validation.
@@ -234,7 +235,7 @@ Let's try with a valid JWT:
 
 ```bash
 TOKEN=$(curl -s https://raw.githubusercontent.com/istio/istio/release-1.17/security/tools/jwt/samples/demo.jwt)
-kubectl exec -n secure-apps $FRONTEND_POD -c httpbin -- curl -s http://backend:80/headers -H "Authorization: Bearer $TOKEN"
+kubectl exec -n secure-apps $FRONTEND_POD -- curl -s http://backend:80/headers -H "Authorization: Bearer $TOKEN"
 ```{{exec}}
 
 This should succeed since we're providing a valid JWT token.

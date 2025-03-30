@@ -61,10 +61,10 @@ Let's test our authorization policies:
 FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath={.items..metadata.name})
 
 # This should work - GET from frontend to backend
-kubectl exec -n secure-apps $FRONTEND_POD -c httpbin -- curl -s http://backend:80/headers -H "Authorization: Bearer $TOKEN"
+kubectl exec -n secure-apps $FRONTEND_POD -- curl -s http://backend:80/headers -H "Authorization: Bearer $TOKEN"
 
 # This should fail - POST from frontend to backend (not allowed in policy)
-kubectl exec -n secure-apps $FRONTEND_POD -c httpbin -- curl -s -X POST http://backend:80/headers -H "Authorization: Bearer $TOKEN"
+kubectl exec -n secure-apps $FRONTEND_POD -- curl -s -X POST http://backend:80/headers -H "Authorization: Bearer $TOKEN"
 ```{{exec}}
 
 ## Task 3: Implement Network Security Controls

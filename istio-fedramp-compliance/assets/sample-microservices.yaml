@@ -41,7 +41,8 @@ spec:
       serviceAccountName: frontend
       containers:
       - name: httpbin
-        image: docker.io/kennethreitz/httpbin
+        image: curlimages/curl:7.83.1
+        command: ["sleep", "infinity"]
         ports:
         - containerPort: 80
         resources:
