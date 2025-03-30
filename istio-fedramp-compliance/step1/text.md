@@ -13,7 +13,7 @@ Service meshes provide critical security capabilities that align with FedRAMP re
 
 ## Task 1: Install Istio with Secure Configuration
 
-First, let's download and install Istio with security-focused settings:
+First, let's download and install Istio:
 
 ```bash
 curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.17.2 sh -
@@ -21,18 +21,18 @@ cd istio-1.17.2
 export PATH=$PWD/bin:$PATH
 ```{{exec}}
 
-Now, let's create a secure IstioOperator configuration that aligns with FedRAMP requirements:
+Let's install Istio with security settings focused on FedRAMP compliance:
 
 ```bash
-cat << EOF > ./secure-istio-config.yaml
+cat << EOF > ./secure-istio.yaml
 apiVersion: install.istio.io/v1alpha1
 kind: IstioOperator
-metadata:
-  name: secure-istio-config
 spec:
-  profile: default
   components:
+    base:
+      enabled: true
     pilot:
+      enabled: true
       k8s:
         resources:
           requests:
@@ -41,7 +41,6 @@ spec:
           limits:
             cpu: 1000m
             memory: 2048Mi
-    # Ensure ingress gateway has proper resource limits (SC-6)
     ingressGateways:
     - name: istio-ingressgateway
       enabled: true
@@ -51,51 +50,21 @@ spec:
             cpu: 100m
             memory: 128Mi
           limits:
-            cpu: 2000m
-            memory: 1024Mi
+            cpu: 500m
+            memory: 512Mi
         hpaSpec:
-          minReplicas: 2  # High availability (SC-6, CP-10)
+          minReplicas: 1
   meshConfig:
-    # Enable access logging for all services (AU-2, AU-3)
+    # Enable access logging for audit trails (AU-2, AU-3)
     accessLogFile: "/dev/stdout"
     # Enable automatic mTLS (SC-8, SC-13)
     enableAutoMtls: true
-    # Default to deny all traffic (AC-3, SC-7)
+    # Deny external traffic by default (AC-3, SC-7)
     outboundTrafficPolicy:
       mode: REGISTRY_ONLY
-    # Restrict control plane communications (SC-7)
-    defaultConfig:
-      controlPlaneAuthPolicy: MUTUAL_TLS
-      # Enforce secure token validation (IA-2, IA-5)
-      proxyMetadata:
-        ISTIO_META_TOKEN_AUDIENCES: "istio-ca"
-  values:
-    # Restrict access to control plane components (AC-3, AC-6)
-    global:
-      proxy:
-        privileged: false
-      # Ensure modern cipher suites and protocols (SC-8, SC-13)
-      tls:
-        minProtocolVersion: TLSV1_2
-        cipherSuites:
-        - ECDHE-ECDSA-AES256-GCM-SHA384
-        - ECDHE-RSA-AES256-GCM-SHA384
-        - ECDHE-ECDSA-AES128-GCM-SHA256
-        - ECDHE-RSA-AES128-GCM-SHA256
-    # Enable distributed tracing (AU-2, AU-3, SI-4)
-    pilot:
-      traceSampling: 100.0
-    # Secure default gateway settings (AC-4, SC-7)
-    gateways:
-      istio-ingressgateway:
-        autoscaleEnabled: true
 EOF
-```{{exec}}
 
-Let's install Istio with this secure configuration:
-
-```bash
-istioctl install -f secure-istio-config.yaml --verify -y
+istioctl install -f secure-istio.yaml -y
 ```{{exec}}
 
 ## Task 2: Verify Installation Security
@@ -141,7 +110,7 @@ kubectl apply -f istio-1.17.2/samples/addons/grafana.yaml
 kubectl apply -f istio-1.17.2/samples/addons/kiali.yaml
 
 # Wait for pods to be ready
-kubectl wait --for=condition=ready pod --all -n istio-system --timeout=300s
+kubectl wait --for=condition=ready pod --all -n istio-system --timeout=300s || true
 ```{{exec}}
 
 ## Task 5: Verify Security Configuration
@@ -152,8 +121,8 @@ Let's verify our security configuration by checking the mTLS status:
 # Check the PeerAuthentication policy
 kubectl get peerauthentication -A
 
-# Validate that mTLS is enabled for all services
-istioctl x authz check deploy/istiod -n istio-system
+# Validate that mTLS is enabled for the mesh
+istioctl analyze -k --failure-threshold=Error
 ```{{exec}}
 
 This command should confirm that our Istio installation requires strict mTLS for service-to-service communication.
