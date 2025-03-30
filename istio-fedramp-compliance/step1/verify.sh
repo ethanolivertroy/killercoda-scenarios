@@ -5,9 +5,9 @@ if kubectl get namespace istio-system &>/dev/null; then
   if kubectl get pods -n istio-system | grep -q istiod; then
     # Check that strict mTLS is configured
     if kubectl get peerauthentication -n istio-system | grep -q default; then
-      # Check that monitoring components are installed
-      if kubectl get pods -n istio-system | grep -q prometheus; then
-        echo "Great! You've successfully set up a secure Istio service mesh with mTLS and monitoring."
+      # Check namespace created
+      if kubectl get namespace secure-apps &>/dev/null; then
+        echo "Great! You've successfully set up a secure Istio service mesh with mTLS configuration."
         exit 0
       fi
     fi
