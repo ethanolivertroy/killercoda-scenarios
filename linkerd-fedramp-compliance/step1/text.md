@@ -56,7 +56,7 @@ linkerd install --crds | kubectl apply -f -
 # Install the Linkerd control plane with enhanced security settings for FedRAMP
 linkerd install \
   --set proxyInit.runAsRoot=true \
-  --set proxy.opaquePorts="25,443,587,3306,5432,11211" \
+  --set proxy.opaquePorts=25,443,587,3306,5432,11211 \
   --set identity.issuer.scheme=kubernetes.io/serviceaccount \
   | kubectl apply -f -
 
