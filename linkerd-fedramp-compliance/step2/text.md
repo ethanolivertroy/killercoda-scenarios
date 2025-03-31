@@ -323,8 +323,11 @@ Let's inspect the proxy version and configuration:
 FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
 kubectl get pod $FRONTEND_POD -n secure-apps -o yaml | grep -A5 linkerd.io/proxy-version
 
-# Check the proxy status annotation
-kubectl get pod $FRONTEND_POD -n secure-apps -o jsonpath='{.metadata.annotations.linkerd\.io/proxy-status}'
+# Check the pod annotations to verify proxy injection
+kubectl get pod $FRONTEND_POD -n secure-apps -o yaml | grep -A5 annotations
+
+# List all available Linkerd-related annotations
+kubectl get pod $FRONTEND_POD -n secure-apps -o yaml | grep linkerd
 ```{{exec}}
 
 ### Task 4c: Verify mTLS Connections

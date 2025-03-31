@@ -66,9 +66,12 @@ echo "Trust anchor configuration:"
 kubectl get configmap linkerd-identity-trust-roots -n linkerd -o yaml
 
 echo
-echo "Proxy identity configuration:"
+echo "Proxy configuration:"
 SAMPLE_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
-kubectl get pod -n secure-apps $SAMPLE_POD -o yaml | grep -A10 linkerd.io/proxy-identity
+echo "Annotations on the pod:"
+kubectl get pod -n secure-apps $SAMPLE_POD -o yaml | grep -A5 annotations
+echo "Linkerd-related information:"
+kubectl get pod -n secure-apps $SAMPLE_POD -o yaml | grep linkerd
 
 echo
 echo "## 5. AUDIT LOGGING (AU-2, AU-3, AU-12)"
