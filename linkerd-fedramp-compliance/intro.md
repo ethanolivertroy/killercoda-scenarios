@@ -47,15 +47,35 @@ Organizations choose Linkerd over other service meshes for several key reasons:
 
 ## Linkerd and FedRAMP Compliance
 
-Linkerd offers a streamlined approach to implementing many NIST 800-53 controls:
+Linkerd offers a streamlined approach to implementing many NIST 800-53 controls. Below are the key security control families where Linkerd provides direct capabilities:
 
+### System and Communications Protection (SC)
 - **SC-8/SC-13**: Transmission Confidentiality and Integrity through automatic mTLS
+- **SC-7**: Boundary Protection through internal network segmentation via policies
+- **SC-12**: Cryptographic Key Management through certificate lifecycle management
+- **SC-17**: PKI Certificates through automatic identity certificate issuance
+- **SC-23**: Session Authenticity through mutual TLS authentication
+
+### Access Control (AC)
+- **AC-3**: Access Enforcement through authorization policies for service-to-service comms
+- **AC-4**: Information Flow Control through defining allowed communication paths
+- **AC-6**: Least Privilege principles through granular service-to-service policies
+
+### Identification and Authentication (IA)
 - **IA-3**: Device Identification and Authentication through strong service identity
-- **AC-3/AC-4**: Access Enforcement and Information Flow Control through service policies
-- **AU-2/AU-3**: Audit Events through detailed proxied traffic logs
-- **SI-4/SI-7**: System Monitoring and Information Integrity through mesh telemetry
+- **IA-5**: Authenticator Management through automatic certificate rotation
+
+### Audit and Accountability (AU)
+- **AU-2/AU-3**: Audit Events and Content through detailed proxied traffic logs
+- **AU-12**: Audit Generation through creation of metrics and logs for mesh traffic
+
+### System and Information Integrity (SI)
+- **SI-4**: Information System Monitoring through metrics and golden signals
+- **SI-7**: Software and Information Integrity through ensuring data integrity in transit
 
 **Important Note on Scope**: Linkerd primarily addresses internal service-to-service communication security within a Kubernetes cluster. It does not address remote access (AC-17) into the cluster from external networks - that requires complementary solutions like VPNs, API gateways, or ingress controllers.
+
+**Completeness Consideration**: Linkerd is often part of the solution for a control, not the entire solution. For example, while Linkerd generates audit data (AU-12), you still need systems to collect, store, and analyze it (AU-4, AU-6).
 
 Compared to other solutions, Linkerd's approach to these controls combines simplicity with strong security foundations, making it an excellent choice for teams that need FedRAMP compliance without excessive complexity.
 
