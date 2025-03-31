@@ -99,22 +99,35 @@ kubectl get deployment linkerd-proxy-injector -n linkerd -o yaml | grep -A20 con
 
 ## FedRAMP Compliance Check
 
-Let's evaluate how our Linkerd installation satisfies key FedRAMP requirements:
+Let's evaluate how our Linkerd installation addresses key FedRAMP requirements:
 
-1. **SC-8 (Transmission Confidentiality and Integrity)**:
+### Primary Security Controls
+
+1. **SC-8/SC-13 (Transmission Confidentiality and Protection)**:
    - Linkerd automatically enables mTLS between all meshed services
+   - Uses strong cryptographic algorithms for protection
    - TLS certificates are short-lived and automatically rotated
 
-2. **IA-3 (Device Identification and Authentication)**:
-   - Each service gets a unique SPIFFE identity
+2. **IA-2 (Service Identification and Authentication)**:
+   - Each service receives a unique SPIFFE-compatible identity
    - Identity is cryptographically verifiable
+   - All communications use these identities for verification
 
-3. **AC-17 (Remote Access)**:
-   - All service-to-service access is authenticated and encrypted
-   - Policy controller enables granular access control
+### Supporting Capabilities  
 
-4. **AU-2/AU-3 (Audit Events/Content of Audit Records)**:
-   - Detailed proxy logs capture all service-to-service communication
+1. **AC-3/AC-4 (Access Enforcement and Information Flow)**:
+   - Policy controller enables granular service-to-service control
+   - Policies can be defined based on service identity
+
+2. **AU-2/AU-3 (Audit Events/Content)**:
+   - Proxy generates logs of service-to-service communication
    - Metrics provide visibility into access patterns
+   - Note: External collection systems required for complete audit trail
 
-In the next step, we'll deploy applications to the mesh and implement security policies to further enhance our FedRAMP compliance posture.
+### Implementation Note
+Our Linkerd installation provides the foundation for these security controls, but actual enforcement requires:
+1. Deploying applications into the mesh
+2. Defining appropriate authorization policies
+3. Setting up observability and logging infrastructure
+
+In the next step, we'll deploy applications to the mesh and implement security policies to demonstrate these capabilities.
