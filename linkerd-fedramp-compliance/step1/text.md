@@ -13,7 +13,7 @@ Linkerd's security model centers on:
 
 These capabilities map directly to FedRAMP requirements including:
 - **SC-8/SC-13**: Transmission Confidentiality and Integrity
-- **IA-3**: Device Identification and Authentication
+- **IA-2/IA-5**: Service Identification and Authenticator Management
 - **AC-3/AC-4**: Access Enforcement and Information Flow Control
 - **SI-4/SI-7**: System Monitoring and Information Integrity
 

@@ -293,17 +293,15 @@ Let's review how our Linkerd implementation addresses key FedRAMP requirements f
 
 ### Identification and Authentication (IA)
 
-1. **IA-2 (Identification and Authentication)**:
-   - Service accounts tied to pod identities with cryptographic verification
-   - Each service has identity verified before communication
+1. **IA-2 (Identification and Authentication - Organizational Users)**:
+   - Each service has a unique SPIFFE identity tied to its service account
+   - Services are uniquely identified via cryptographic verification
+   - Identity is verified before any communication is permitted
 
-2. **IA-3 (Device Identification and Authentication)**:
-   - Each pod has a unique SPIFFE identity tied to its service account
-   - Identity is cryptographically verifiable through the mesh
-
-3. **IA-5 (Authenticator Management)**:
-   - Certificates are automatically rotated with short lifetimes
+2. **IA-5 (Authenticator Management)**:
+   - Service certificates are automatically rotated with short lifetimes
    - Trust chain is cryptographically verified during communication
+   - Certificates handle authentication between services
 
 ### Audit and Accountability (AU)
 

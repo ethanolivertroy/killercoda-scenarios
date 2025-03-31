@@ -62,8 +62,8 @@ Linkerd offers a streamlined approach to implementing many NIST 800-53 controls.
 - **AC-6**: Least Privilege principles through granular service-to-service policies
 
 ### Identification and Authentication (IA)
-- **IA-3**: Device Identification and Authentication through strong service identity
-- **IA-5**: Authenticator Management through automatic certificate rotation
+- **IA-2**: Identification and Authentication (Organizational Users) applied to services, where each service has a unique identity
+- **IA-5**: Authenticator Management through automatic certificate rotation and lifecycle
 
 ### Audit and Accountability (AU)
 - **AU-2/AU-3**: Audit Events and Content through detailed proxied traffic logs
