@@ -123,10 +123,10 @@ Linkerd automatically establishes mTLS between meshed services. Let's verify thi
 kubectl get pods -n secure-apps -o jsonpath='{.items[*].metadata.name}' | xargs -n1 kubectl -n secure-apps get pod -o yaml | grep linkerd.io/proxy-status
 
 # Verify that mTLS is enabled for our services
-linkerd edges -n secure-apps deployment
+linkerd viz edges -n secure-apps deployment
 
-# Check the detailed mTLS stats
-linkerd stat -n secure-apps --tls deployment
+# Check the detailed stats
+linkerd viz stat -n secure-apps deployment
 ```{{exec}}
 
 This verifies that Linkerd has established mTLS between our services, meeting SC-8 requirements for encrypted communications.

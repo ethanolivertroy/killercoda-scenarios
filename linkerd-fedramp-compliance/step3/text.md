@@ -72,7 +72,7 @@ echo
 echo "## 5. AUDIT LOGGING (AU-2, AU-3, AU-12)"
 echo
 echo "Linkerd tap (traffic sampling):"
-linkerd tap -n secure-apps deployment/frontend --to deployment/backend --path "/" -o json | head -n 10
+linkerd viz tap -n secure-apps deployment/frontend --to deployment/backend --path "/" -o json | head -n 10
 
 echo
 echo "## 6. SECURITY COMPLIANCE SUMMARY"

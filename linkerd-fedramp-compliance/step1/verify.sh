@@ -15,7 +15,17 @@ if kubectl get namespace linkerd &>/dev/null; then
       PROXY_INJECTOR_PODS=$(kubectl get pods -n linkerd -l linkerd.io/control-plane-component=proxy-injector -o jsonpath='{.items[*].status.phase}' | grep -c "Running" || echo "0")
       
       if [ "$IDENTITY_PODS" -gt 0 ] && [ "$DESTINATION_PODS" -gt 0 ] && [ "$PROXY_INJECTOR_PODS" -gt 0 ]; then
-        echo "Great! You've successfully installed a secure Linkerd service mesh."
+        # Also check for Viz extension, but don't fail if it's not there yet
+        if kubectl get namespace linkerd-viz &>/dev/null; then
+          VIZ_PODS=$(kubectl get pods -n linkerd-viz -o jsonpath='{.items[*].status.phase}' | grep -c "Running" || echo "0")
+          if [ "$VIZ_PODS" -gt 0 ]; then
+            echo "Great! You've successfully installed a secure Linkerd service mesh with the Viz extension."
+          else
+            echo "Great! You've successfully installed a secure Linkerd service mesh, but Viz extension pods are not running yet."
+          fi
+        else
+          echo "Great! You've successfully installed a secure Linkerd service mesh. Don't forget to install the Viz extension."
+        fi
         exit 0
       fi
     fi

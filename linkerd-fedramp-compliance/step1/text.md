@@ -58,6 +58,12 @@ linkerd install | kubectl apply -f -
 
 # Wait for Linkerd to be ready
 kubectl wait --for=condition=ready pod --all -n linkerd --timeout=300s
+
+# Install the Linkerd Viz extension for observability
+linkerd viz install | kubectl apply -f -
+
+# Wait for the Viz components to be ready
+kubectl wait --for=condition=ready pod --all -n linkerd-viz --timeout=300s
 ```{{exec}}
 
 ## Task 4: Verify Installation Security
