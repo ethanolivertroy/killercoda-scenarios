@@ -222,8 +222,8 @@ kubectl get pod $FRONTEND_POD -n secure-apps -o yaml | grep -A5 linkerd.io/proxy
 # Check the proxy status annotation
 kubectl get pod $FRONTEND_POD -n secure-apps -o jsonpath='{.metadata.annotations.linkerd\.io/proxy-status}'
 
-# View the mTLS status for connections to and from the frontend
-linkerd viz edges pod/$FRONTEND_POD -n secure-apps
+# View the mTLS status for connections in the secure-apps namespace
+linkerd viz edges deployment -n secure-apps
 ```{{exec}}
 
 ## Task 5: Security Policy Testing and Validation
