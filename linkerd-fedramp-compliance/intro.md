@@ -51,9 +51,11 @@ Linkerd offers a streamlined approach to implementing many NIST 800-53 controls:
 
 - **SC-8/SC-13**: Transmission Confidentiality and Integrity through automatic mTLS
 - **IA-3**: Device Identification and Authentication through strong service identity
-- **AC-17**: Remote Access enforcement through secure service-to-service communication
+- **AC-3/AC-4**: Access Enforcement and Information Flow Control through service policies
 - **AU-2/AU-3**: Audit Events through detailed proxied traffic logs
-- **CM-6**: Configuration Settings through declarative policy configuration
+- **SI-4/SI-7**: System Monitoring and Information Integrity through mesh telemetry
+
+**Important Note on Scope**: Linkerd primarily addresses internal service-to-service communication security within a Kubernetes cluster. It does not address remote access (AC-17) into the cluster from external networks - that requires complementary solutions like VPNs, API gateways, or ingress controllers.
 
 Compared to other solutions, Linkerd's approach to these controls combines simplicity with strong security foundations, making it an excellent choice for teams that need FedRAMP compliance without excessive complexity.
 

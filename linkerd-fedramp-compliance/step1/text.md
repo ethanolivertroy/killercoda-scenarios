@@ -14,7 +14,8 @@ Linkerd's security model centers on:
 These capabilities map directly to FedRAMP requirements including:
 - **SC-8/SC-13**: Transmission Confidentiality and Integrity
 - **IA-3**: Device Identification and Authentication
-- **AC-17**: Remote Access
+- **AC-3/AC-4**: Access Enforcement and Information Flow Control
+- **SI-4/SI-7**: System Monitoring and Information Integrity
 
 ## Task 1: Install the Linkerd CLI
 
