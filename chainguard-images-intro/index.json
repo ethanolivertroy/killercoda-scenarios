@@ -1,0 +1,32 @@
+{
+  "title": "Introduction to Chainguard Images",
+  "description": "Learn about secure, minimal container images with Chainguard",
+  "details": {
+    "intro": {
+      "text": "intro.md"
+    },
+    "steps": [
+      {
+        "title": "Understanding Chainguard Images",
+        "text": "step1/text.md",
+        "verify": "step1/verify.sh"
+      },
+      {
+        "title": "Running and Inspecting Chainguard Images",
+        "text": "step2/text.md",
+        "verify": "step2/verify.sh"
+      },
+      {
+        "title": "Building with Chainguard Images",
+        "text": "step3/text.md",
+        "verify": "step3/verify.sh"
+      }
+    ],
+    "finish": {
+      "text": "finish.md"
+    }
+  },
+  "backend": {
+    "imageid": "ubuntu:2004"
+  }
+}
