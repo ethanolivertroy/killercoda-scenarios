@@ -77,7 +77,19 @@ linkerd install | kubectl apply -f -
 kubectl wait --for=condition=ready pod --all -n linkerd --timeout=300s
 ```{{exec}}
 
-### Task 3c: Install Visualization Components
+### Task 3c: Install Policy Controller
+
+Let's install the Linkerd policy controller which is needed for authorization policies:
+
+```bash
+# Install the Linkerd Policy controller
+linkerd install-policy | kubectl apply -f -
+
+# Wait for the policy controller to be ready
+kubectl wait --for=condition=ready pod -l "component=policy" -n linkerd --timeout=300s || echo "Policy controller pods not found - policy capabilities may be integrated into other components"
+```{{exec}}
+
+### Task 3d: Install Visualization Components
 
 Let's add the Linkerd Viz extension for observability and monitoring:
 

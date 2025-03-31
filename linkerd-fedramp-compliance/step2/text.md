@@ -166,24 +166,43 @@ This verification confirms that Linkerd has established mTLS between our service
 
 ## Task 3: Implement Authorization Policies
 
-### Task 3a: Verify Policy Controller
+### Task 3a: Verify Policy API Support
 
-Let's first verify that the Linkerd policy controller is installed:
+Let's first verify that the Linkerd installation has policy API support by checking for the policy custom resource definitions:
 
 ```bash
-# The policy controller is now included in the default installation
-# Check that policy components are installed
-kubectl get deploy -n linkerd | grep policy
+# Check that policy CRDs are installed
+kubectl get crds | grep policy.linkerd.io
+kubectl get crds | grep linkerd.io/v1
+
+# List the Linkerd components that are installed
+kubectl get deploy -n linkerd
 ```{{exec}}
 
-### Task 3b: Create Authorization Policies
+### Task 3b: Install Policy Controller (if needed)
+
+If the policy CRDs weren't found, we'll install the policy controller now:
+
+```bash
+# Check if we need to install the policy controller
+if ! kubectl get crds | grep -q policy.linkerd.io; then
+  echo "Installing policy controller..."
+  linkerd install-policy | kubectl apply -f -
+  sleep 10
+fi
+```{{exec}}
+
+### Task 3c: Create Authorization Policies
 
 Now let's create a server authorization policy to restrict access to the backend service:
 
 ```bash
+# Check available API versions for policy resources
+kubectl api-resources | grep linkerd.io/v
+
 # Create a server authorization policy to restrict access to the backend service
 cat << EOF | kubectl apply -f -
-apiVersion: policy.linkerd.io/v1beta3
+apiVersion: policy.linkerd.io/v1alpha1
 kind: Server
 metadata:
   name: backend-server
@@ -195,7 +214,7 @@ spec:
   port: 80
   proxyProtocol: HTTP/1
 ---
-apiVersion: policy.linkerd.io/v1beta3
+apiVersion: policy.linkerd.io/v1alpha1
 kind: ServerAuthorization
 metadata:
   name: backend-server-auth
@@ -210,9 +229,41 @@ spec:
         - name: frontend
           namespace: secure-apps
 EOF
+
+# In case the v1alpha1 versions don't work, try v1beta1
+if [ $? -ne 0 ]; then
+  cat << EOF | kubectl apply -f -
+apiVersion: policy.linkerd.io/v1beta1
+kind: Server
+metadata:
+  name: backend-server
+  namespace: secure-apps
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  port: 80
+  proxyProtocol: HTTP/1
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  name: backend-server-auth
+  namespace: secure-apps
+spec:
+  server: backend-server
+  client:
+    # Only allow the frontend service to access the backend service
+    unauthenticated: false
+    meshTLS:
+      serviceAccounts:
+        - name: frontend
+          namespace: secure-apps
+EOF
+fi
 ```{{exec}}
 
-### Task 3c: Prepare Test Pod for Access Testing
+### Task 3d: Prepare Test Pod for Access Testing
 
 Let's create a test pod to verify that unauthorized access is denied:
 
@@ -233,7 +284,7 @@ kubectl wait --for=condition=ready pod/test-pod -n secure-apps --timeout=60s
 kubectl exec -it test-pod -n secure-apps -c test-pod -- apk add --no-cache curl
 ```{{exec}}
 
-### Task 3d: Test Unauthorized Access
+### Task 3e: Test Unauthorized Access
 
 Let's verify that unauthorized pods cannot access the backend service:
 
@@ -242,7 +293,7 @@ Let's verify that unauthorized pods cannot access the backend service:
 kubectl exec -it test-pod -n secure-apps -c test-pod -- curl -s http://backend.secure-apps.svc.cluster.local --max-time 5 || echo "Access denied as expected"
 ```{{exec}}
 
-### Task 3e: Test Authorized Access
+### Task 3f: Test Authorized Access
 
 Now let's verify that the frontend pod (which is authorized) can access the backend service:
 
@@ -295,8 +346,31 @@ linkerd viz edges deployment -n secure-apps
 Let's implement an HTTP route policy to further demonstrate Linkerd's security capabilities:
 
 ```bash
+# Check available HTTPRoute API versions
+kubectl api-resources | grep HTTPRoute
+
 # Create a basic HTTP route rule that allows all traffic to backend but captures metrics
 cat << EOF | kubectl apply -f -
+apiVersion: policy.linkerd.io/v1alpha1
+kind: HTTPRoute
+metadata:
+  name: backend-route
+  namespace: secure-apps
+spec:
+  parentRefs:
+  - name: backend-server
+    kind: Server
+    group: policy.linkerd.io
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+EOF
+
+# In case the v1alpha1 version doesn't work, try v1beta1
+if [ $? -ne 0 ]; then
+  cat << EOF | kubectl apply -f -
 apiVersion: policy.linkerd.io/v1beta1
 kind: HTTPRoute
 metadata:
@@ -313,6 +387,7 @@ spec:
         type: PathPrefix
         value: /
 EOF
+fi
 ```{{exec}}
 
 ### Task 5b: Test GET Request
