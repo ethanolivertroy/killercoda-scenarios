@@ -13,6 +13,8 @@ FedRAMP requires documented evidence of security control implementation, includi
 
 ## Task 1: Create a Linkerd Security Audit Script
 
+### Task 1a: Generate the Security Audit Script
+
 Let's create a script to audit our Linkerd service mesh for FedRAMP compliance:
 
 ```bash
@@ -93,25 +95,41 @@ echo "4. Implement continuous monitoring for SI-4 compliance"
 echo "5. Ensure certificate rotation procedures for IA-5 compliance"
 echo "=================================================="
 EOF
+```{{exec}}
 
+### Task 1b: Make the Script Executable
+
+Now let's make our script executable:
+
+```bash
 chmod +x /root/linkerd-security-audit.sh
 ```{{exec}}
 
 ## Task 2: Run the Security Audit and Generate Evidence
+
+### Task 2a: Execute the Audit Script
 
 Let's run our audit script to generate compliance evidence:
 
 ```bash
 # Run the audit script
 /root/linkerd-security-audit.sh > /root/linkerd-fedramp-audit-report.txt
+```{{exec}}
 
+### Task 2b: Review Audit Results
+
+Now let's examine the results of our audit:
+
+```bash
 # View the summary of the report
 tail -n 15 /root/linkerd-fedramp-audit-report.txt
 ```{{exec}}
 
 ## Task 3: Implement Continuous Monitoring
 
-FedRAMP requires continuous monitoring (SI-4). Let's set up some basic monitoring:
+### Task 3a: Ensure Visualization Components are Installed
+
+FedRAMP requires continuous monitoring (SI-4). Let's ensure our monitoring components are set up:
 
 ```bash
 # Install the Linkerd viz extension which includes Prometheus and Grafana
@@ -122,10 +140,22 @@ kubectl wait --for=condition=ready pod --all -n linkerd-viz --timeout=300s
 
 # Check that viz is working correctly
 linkerd viz check
+```{{exec}}
 
+### Task 3b: Configure Monitoring Dashboard
+
+Now let's set up our monitoring dashboard:
+
+```bash
 # View the metrics dashboard (note: in a real environment, this would open a web UI)
 echo "In a real environment, you would now access: linkerd viz dashboard"
+```{{exec}}
 
+### Task 3c: Create Automated Audit Schedule
+
+Let's set up a scheduled job to run our audit script regularly:
+
+```bash
 # Setup a cronjob to run our audit script regularly
 cat << EOF | kubectl apply -f -
 apiVersion: batch/v1
@@ -166,6 +196,8 @@ EOF
 ```{{exec}}
 
 ## Task 4: Generate FedRAMP Documentation
+
+### Task 4a: Create Compliance Documentation
 
 Let's create a FedRAMP compliance document that maps Linkerd controls to NIST 800-53:
 
@@ -229,6 +261,8 @@ echo "FedRAMP compliance documentation generated: /root/linkerd-fedramp-complian
 ```{{exec}}
 
 ## Task 5: Create a Remediation Plan for Any Gaps
+
+### Task 5a: Develop a Security Gap Remediation Plan
 
 FedRAMP requires identifying and addressing any security gaps. Let's create a remediation plan:
 

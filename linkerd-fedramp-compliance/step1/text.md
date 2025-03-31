@@ -19,12 +19,20 @@ These capabilities map directly to FedRAMP requirements including:
 
 ## Task 1: Install the Linkerd CLI
 
+### Task 1a: Download and Install CLI
+
 First, let's download and install the Linkerd CLI which we'll use to manage our service mesh:
 
 ```bash
 # Download and install the Linkerd CLI
 curl -sL https://run.linkerd.io/install | sh
+```{{exec}}
 
+### Task 1b: Configure Path and Verify Installation
+
+Now let's add Linkerd to your path and verify it's installed correctly:
+
+```bash
 # Add linkerd to your path
 export PATH=$PATH:$HOME/.linkerd2/bin
 
@@ -34,7 +42,7 @@ linkerd version
 
 ## Task 2: Verify Kubernetes Cluster Readiness
 
-Before installing Linkerd, let's check if our Kubernetes cluster is properly configured:
+Let's check if our Kubernetes cluster is properly configured for Linkerd:
 
 ```bash
 # Run pre-checks to verify cluster configuration
@@ -45,7 +53,9 @@ This command ensures your Kubernetes cluster meets all the requirements for a Li
 
 ## Task 3: Install Linkerd with FedRAMP-Compliant Configuration
 
-Now, let's install Linkerd with enhanced security settings that align with FedRAMP requirements:
+### Task 3a: Install Required CRDs
+
+First, let's install the necessary Custom Resource Definitions (CRDs):
 
 ```bash
 # Install Gateway API CRDs first
@@ -53,13 +63,25 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 
 # Now install the Linkerd CRDs
 linkerd install --crds | kubectl apply -f -
+```{{exec}}
 
+### Task 3b: Install Linkerd Control Plane
+
+Now let's install the Linkerd control plane with security-focused settings:
+
+```bash
 # Install the Linkerd control plane with basic settings
 linkerd install | kubectl apply -f -
 
 # Wait for Linkerd to be ready
 kubectl wait --for=condition=ready pod --all -n linkerd --timeout=300s
+```{{exec}}
 
+### Task 3c: Install Visualization Components
+
+Let's add the Linkerd Viz extension for observability and monitoring:
+
+```bash
 # Install the Linkerd Viz extension for observability
 linkerd viz install | kubectl apply -f -
 
@@ -69,12 +91,20 @@ kubectl wait --for=condition=ready pod --all -n linkerd-viz --timeout=300s
 
 ## Task 4: Verify Installation Security
 
+### Task 4a: Run Basic Checks
+
 Let's verify that Linkerd has been installed securely:
 
 ```bash
 # Run linkerd check to ensure everything is working correctly
 linkerd check
+```{{exec}}
 
+### Task 4b: Verify Proxy and mTLS Configuration
+
+Now let's check the proxy configuration and mTLS settings:
+
+```bash
 # Verify that mTLS is configured correctly
 linkerd check --proxy
 
@@ -84,15 +114,29 @@ kubectl get pods -n linkerd
 
 ## Task 5: Understand Linkerd's Security Components
 
-Linkerd's security architecture consists of several components that work together to provide a secure service mesh:
+### Task 5a: Examine Identity Components
+
+Let's explore Linkerd's security architecture components:
 
 ```bash
 # View the Linkerd identity components
 kubectl get deployments -n linkerd | grep identity
+```{{exec}}
 
+### Task 5b: Inspect Certificate Authority Setup
+
+Now let's look at how certificates are managed:
+
+```bash
 # Check the certificate authority setup
 kubectl get secret linkerd-identity-issuer -n linkerd -o yaml
+```{{exec}}
 
+### Task 5c: Examine Proxy Injection Configuration
+
+Finally, let's examine how Linkerd injects proxies into your workloads:
+
+```bash
 # Examine the Linkerd proxy injector
 kubectl get deployment linkerd-proxy-injector -n linkerd -o yaml | grep -A20 containers:
 ```{{exec}}
