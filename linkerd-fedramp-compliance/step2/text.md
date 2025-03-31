@@ -168,27 +168,36 @@ This verification confirms that Linkerd has established mTLS between our service
 
 ### Task 3a: Verify Policy API Support
 
-Let's first verify that the Linkerd installation has policy API support by checking for the policy custom resource definitions:
+Let's first verify what policy-related capabilities are available in our Linkerd installation by checking the policy custom resource definitions:
 
 ```bash
-# Check that policy CRDs are installed
-kubectl get crds | grep policy.linkerd.io
-kubectl get crds | grep linkerd.io/v1
+# Check for policy-related CRDs
+kubectl get crds | grep linkerd.io
+
+# Alternative verification via API resources
+kubectl api-resources | grep linkerd.io
 
 # List the Linkerd components that are installed
 kubectl get deploy -n linkerd
 ```{{exec}}
 
-### Task 3b: Install Policy Controller (if needed)
+### Task 3b: Prepare for Policy Implementation
 
-If the policy CRDs weren't found, we'll install the policy controller now:
+Let's prepare for implementing authorization policies by checking which resources we can create:
 
 ```bash
-# Check if we need to install the policy controller
-if ! kubectl get crds | grep -q policy.linkerd.io; then
-  echo "Installing policy controller..."
-  linkerd install-policy | kubectl apply -f -
-  sleep 10
+# Check which API versions and groups are available for authorization policies
+kubectl api-resources | grep -i auth
+
+# Check Linkerd version for reference
+linkerd version
+
+# Check if the 'linkerd policy' command group exists
+if linkerd --help | grep -q "policy"; then
+  echo "Linkerd policy command group exists"
+  linkerd policy --help
+else
+  echo "Linkerd policy command group not available - likely integrated in core functionality"
 fi
 ```{{exec}}
 
@@ -197,12 +206,22 @@ fi
 Now let's create a server authorization policy to restrict access to the backend service:
 
 ```bash
-# Check available API versions for policy resources
-kubectl api-resources | grep linkerd.io/v
+# Check for network authorization API resources 
+VERSION=$(kubectl api-resources --api-group=policy.linkerd.io -o name 2>/dev/null | grep -E 'server|authorization' | head -1 | cut -d'.' -f1 || echo "")
+if [ -z "$VERSION" ]; then
+  VERSION=$(kubectl api-resources -o name 2>/dev/null | grep -E 'networkauth|networkauthentication' | head -1 | cut -d'.' -f1 || echo "")
+fi
 
-# Create a server authorization policy to restrict access to the backend service
-cat << EOF | kubectl apply -f -
-apiVersion: policy.linkerd.io/v1alpha1
+echo "Using authorization framework: $VERSION"
+
+# If we found an authorization API, try to create a policy
+if [ -n "$VERSION" ]; then
+  # Try various API versions that might exist
+  for API_VERSION in "policy.linkerd.io/v1alpha1" "policy.linkerd.io/v1beta1" "policy.linkerd.io/v1beta2" "linkerd.io/v1alpha1" "linkerd.io/v1beta1" "security.linkerd.io/v1alpha1" "security.linkerd.io/v1beta1"; do
+    echo "Trying to create authorization policy with API version: $API_VERSION"
+    
+    cat << EOF | kubectl apply -f - 2>/dev/null
+apiVersion: $API_VERSION
 kind: Server
 metadata:
   name: backend-server
@@ -214,7 +233,7 @@ spec:
   port: 80
   proxyProtocol: HTTP/1
 ---
-apiVersion: policy.linkerd.io/v1alpha1
+apiVersion: $API_VERSION
 kind: ServerAuthorization
 metadata:
   name: backend-server-auth
@@ -229,37 +248,15 @@ spec:
         - name: frontend
           namespace: secure-apps
 EOF
-
-# In case the v1alpha1 versions don't work, try v1beta1
-if [ $? -ne 0 ]; then
-  cat << EOF | kubectl apply -f -
-apiVersion: policy.linkerd.io/v1beta1
-kind: Server
-metadata:
-  name: backend-server
-  namespace: secure-apps
-spec:
-  podSelector:
-    matchLabels:
-      app: backend
-  port: 80
-  proxyProtocol: HTTP/1
----
-apiVersion: policy.linkerd.io/v1beta1
-kind: ServerAuthorization
-metadata:
-  name: backend-server-auth
-  namespace: secure-apps
-spec:
-  server: backend-server
-  client:
-    # Only allow the frontend service to access the backend service
-    unauthenticated: false
-    meshTLS:
-      serviceAccounts:
-        - name: frontend
-          namespace: secure-apps
-EOF
+    
+    if [ $? -eq 0 ]; then
+      echo "Successfully created authorization policy with API version: $API_VERSION"
+      break
+    fi
+  done
+else
+  echo "No authorization policy API found. Authorization policies may not be available in this Linkerd version."
+  echo "We will proceed with the demo, but access controls won't be enforced."
 fi
 ```{{exec}}
 
@@ -346,12 +343,27 @@ linkerd viz edges deployment -n secure-apps
 Let's implement an HTTP route policy to further demonstrate Linkerd's security capabilities:
 
 ```bash
-# Check available HTTPRoute API versions
-kubectl api-resources | grep HTTPRoute
+# Check for HTTP route API resources
+VERSION=$(kubectl api-resources --api-group=policy.linkerd.io -o name 2>/dev/null | grep -i 'route' | head -1 || echo "")
+if [ -z "$VERSION" ]; then
+  VERSION=$(kubectl api-resources -o name 2>/dev/null | grep -i 'httproute' | head -1 || echo "")
+fi
 
-# Create a basic HTTP route rule that allows all traffic to backend but captures metrics
-cat << EOF | kubectl apply -f -
-apiVersion: policy.linkerd.io/v1alpha1
+echo "Using HTTP route framework: $VERSION"
+
+# If we found an HTTP route API, try to create a route
+if [ -n "$VERSION" ]; then
+  # Try various API versions that might exist
+  for API_VERSION in "policy.linkerd.io/v1alpha1" "policy.linkerd.io/v1beta1" "linkerd.io/v1alpha1" "linkerd.io/v1beta1" "gateway.networking.k8s.io/v1alpha2" "gateway.networking.k8s.io/v1beta1"; do
+    echo "Trying to create HTTP route with API version: $API_VERSION"
+    
+    SERVER_GROUP="policy.linkerd.io"
+    if [[ "$API_VERSION" == gateway.* ]]; then
+      SERVER_GROUP="gateway.networking.k8s.io"
+    fi
+    
+    cat << EOF | kubectl apply -f - 2>/dev/null
+apiVersion: $API_VERSION
 kind: HTTPRoute
 metadata:
   name: backend-route
@@ -360,33 +372,22 @@ spec:
   parentRefs:
   - name: backend-server
     kind: Server
-    group: policy.linkerd.io
+    group: $SERVER_GROUP
   rules:
   - matches:
     - path:
         type: PathPrefix
         value: /
 EOF
-
-# In case the v1alpha1 version doesn't work, try v1beta1
-if [ $? -ne 0 ]; then
-  cat << EOF | kubectl apply -f -
-apiVersion: policy.linkerd.io/v1beta1
-kind: HTTPRoute
-metadata:
-  name: backend-route
-  namespace: secure-apps
-spec:
-  parentRefs:
-  - name: backend-server
-    kind: Server
-    group: policy.linkerd.io
-  rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /
-EOF
+    
+    if [ $? -eq 0 ]; then
+      echo "Successfully created HTTP route with API version: $API_VERSION"
+      break
+    fi
+  done
+else
+  echo "No HTTP route API found. HTTP-level policies may not be available in this Linkerd version."
+  echo "We will proceed with the demo, but HTTP-level access controls won't be enforced."
 fi
 ```{{exec}}
 

@@ -80,16 +80,22 @@ linkerd install | kubectl apply -f -
 kubectl wait --for=condition=ready pod --all -n linkerd --timeout=300s
 ```{{exec}}
 
-### Task 3c: Install Policy Controller
+### Task 3c: Verify Policy Capabilities
 
-Let's install the Linkerd policy controller which is needed for authorization policies:
+In modern Linkerd versions, policy capabilities are typically included in the main installation. Let's check for policy-related CRDs:
 
 ```bash
-# Install the Linkerd Policy controller
-linkerd install-policy | kubectl apply -f -
+# Check for policy-related CRDs
+kubectl get crds | grep linkerd.io
 
-# Wait for the policy controller to be ready
-kubectl wait --for=condition=ready pod -l "component=policy" -n linkerd --timeout=300s || echo "Policy controller pods not found - policy capabilities may be integrated into other components"
+# If we don't see any policy CRDs, let's check the available commands
+linkerd --help
+
+# List all Linkerd components to see if a policy component exists
+kubectl get deployments -n linkerd
+
+# Check Linkerd version to understand which features are available
+linkerd version
 ```{{exec}}
 
 ### Task 3d: Install Visualization Components
