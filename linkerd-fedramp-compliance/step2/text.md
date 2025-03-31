@@ -253,7 +253,11 @@ EOF
 
 # Test the route policy with GET
 kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend.secure-apps.svc.cluster.local
+```{{exec}}
 
+Now let's try a POST request:
+
+```bash
 # Send a POST request (this should still work with our basic route)
 kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s -X POST http://backend.secure-apps.svc.cluster.local || echo "POST request failed"
 ```{{exec}}
