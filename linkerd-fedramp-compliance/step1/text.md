@@ -53,12 +53,8 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 # Now install the Linkerd CRDs
 linkerd install --crds | kubectl apply -f -
 
-# Install the Linkerd control plane with enhanced security settings for FedRAMP
-linkerd install \
-  --set proxyInit.runAsRoot=true \
-  --set proxy.opaquePorts=25,443,587,3306,5432,11211 \
-  --set identity.issuer.scheme=kubernetes.io/serviceaccount \
-  | kubectl apply -f -
+# Install the Linkerd control plane with basic settings
+linkerd install | kubectl apply -f -
 
 # Wait for Linkerd to be ready
 kubectl wait --for=condition=ready pod --all -n linkerd --timeout=300s
