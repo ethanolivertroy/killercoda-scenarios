@@ -142,11 +142,12 @@ kubectl wait --for=condition=ready pod --all -n secure-apps --timeout=120s
 
 ### Task 2a: Check Proxy Injection
 
-First, let's verify that our pods have been properly injected with the Linkerd proxy:
+First, let's verify that our pods have been properly injected with the Linkerd proxy. We'll check the container count (should be 2 - the app container and the linkerd-proxy) and the READY status:
 
 ```bash
 # Check that the pods have been injected with the Linkerd proxy
-kubectl get pods -n secure-apps -o jsonpath='{.items[*].metadata.name}' | xargs -n1 kubectl -n secure-apps get pod -o yaml | grep linkerd.io/proxy-status
+kubectl get pods -n secure-apps
+kubectl get pods -n secure-apps -o jsonpath='{.items[*].spec.containers[*].name}' | tr ' ' '\n' | grep linkerd-proxy
 ```{{exec}}
 
 ### Task 2b: Verify mTLS Connections
