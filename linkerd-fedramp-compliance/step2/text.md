@@ -333,7 +333,10 @@ Let's check the mTLS status for all connections in our namespace:
 
 ```bash
 # View the mTLS status for connections in the secure-apps namespace
-linkerd viz edges deployment -n secure-apps
+linkerd viz edges deployment -n secure-apps || echo "Command failed but we can continue with the tutorial"
+
+# Try a direct invocation to verify the connection
+kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -sv http://backend.secure-apps.svc.cluster.local
 ```{{exec}}
 
 ## Task 5: Implement and Test HTTP Route Policies

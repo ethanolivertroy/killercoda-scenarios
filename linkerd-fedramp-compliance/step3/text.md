@@ -43,11 +43,11 @@ echo
 echo "## 2. MTLS ENCRYPTION AUDIT (SC-8, SC-13)"
 echo
 echo "mTLS status for all meshed workloads:"
-linkerd edges --all-namespaces deployment
+linkerd viz edges --all-namespaces deployment
 
 echo
 echo "TLS statistics:"
-linkerd stat --tls -n secure-apps deployment
+linkerd viz stat --tls -n secure-apps deployment
 
 echo
 echo "## 3. ACCESS CONTROL AUDIT (AC-3, AC-4, AC-6)"
@@ -74,7 +74,8 @@ echo
 echo "## 5. AUDIT LOGGING (AU-2, AU-3, AU-12)"
 echo
 echo "Linkerd tap (traffic sampling):"
-linkerd viz tap -n secure-apps deployment/frontend --to deployment/backend --path "/" -o json | head -n 10
+linkerd viz tap -n secure-apps deployment/frontend --to deployment/backend --path "/" -o json | head -n 10 || 
+echo "Tap functionality may not be available in this version - this is for informational purposes only"
 
 echo
 echo "## 6. SECURITY COMPLIANCE SUMMARY"
