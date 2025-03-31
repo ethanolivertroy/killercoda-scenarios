@@ -10,15 +10,15 @@ In this step, we will:
 
 First, let's install OPA Gatekeeper:
 
-```bash
-kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/master/deploy/gatekeeper.yaml
 ```
+kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/master/deploy/gatekeeper.yaml
+```{{exec}}
 
 Wait for Gatekeeper to be fully deployed:
 
-```bash
-kubectl wait --for=condition=ready pod -l control-plane=controller-manager -n gatekeeper-system --timeout=90s
 ```
+kubectl wait --for=condition=ready pod -l control-plane=controller-manager -n gatekeeper-system --timeout=90s
+```{{exec}}
 
 ## Understanding Gatekeeper Architecture
 
@@ -29,9 +29,9 @@ OPA Gatekeeper works as a validating webhook in Kubernetes that intercepts API r
 
 Let's check that Gatekeeper is properly installed:
 
-```bash
-kubectl get pods -n gatekeeper-system
 ```
+kubectl get pods -n gatekeeper-system
+```{{exec}}
 
 ## Creating Constraint Templates for FedRAMP Controls
 
@@ -42,21 +42,21 @@ We'll create constraint templates that address key FedRAMP control families. Eac
 
 Let's examine our first template for required security labels (maps to CM-8):
 
-```bash
-cat /root/opa-constraints.yaml
 ```
+cat /root/opa-constraints.yaml
+```{{exec}}
 
 Now, let's apply these constraint templates:
 
-```bash
-kubectl apply -f /root/opa-constraints.yaml
 ```
+kubectl apply -f /root/opa-constraints.yaml
+```{{exec}}
 
 Verify that the templates were created:
 
-```bash
-kubectl get constrainttemplates
 ```
+kubectl get constrainttemplates
+```{{exec}}
 
 ## Implementing FedRAMP Controls with Constraints
 
@@ -134,7 +134,7 @@ spec:
 
 Let's apply these constraints:
 
-```bash
+```
 cat <<EOF | kubectl apply -f -
 apiVersion: constraints.gatekeeper.sh/v1beta1
 kind: K8sRequiredLabels
@@ -189,13 +189,13 @@ spec:
   parameters:
     resources: ["limits.cpu", "limits.memory"]
 EOF
-```
+```{{exec}}
 
 ## Testing Policy Enforcement
 
 Let's test our policies by attempting to deploy a non-compliant pod:
 
-```bash
+```
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: Pod
@@ -208,11 +208,11 @@ spec:
     securityContext:
       privileged: true
 EOF
-```
+```{{exec}}
 
 This should be blocked by our policies. Now let's create a compliant pod:
 
-```bash
+```
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: Pod
@@ -234,20 +234,20 @@ spec:
         cpu: "50m"
         memory: "64Mi"
 EOF
-```
+```{{exec}}
 
 Let's examine our constraints and any violations:
 
-```bash
-kubectl get constraints
 ```
+kubectl get constraints
+```{{exec}}
 
 ## Monitoring and Auditing
 
 We can examine audit results to see resources that were created before our policies or were exempted:
 
-```bash
-kubectl get constraint require-security-labels -o yaml
 ```
+kubectl get constraint require-security-labels -o yaml
+```{{exec}}
 
 This completes our implementation of OPA Gatekeeper policies for key FedRAMP controls. In the next step, we'll implement equivalent policies using Kyverno.

@@ -10,20 +10,20 @@ In this step, we will:
 
 Let's install Kyverno using Helm:
 
-```bash
+```
 # Add the Kyverno Helm repository
 helm repo add kyverno https://kyverno.github.io/kyverno/
 helm repo update
 
 # Install Kyverno
 helm install kyverno kyverno/kyverno -n kyverno --create-namespace
-```
+```{{exec}}
 
 Wait for Kyverno to be fully deployed:
 
-```bash
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=kyverno -n kyverno --timeout=90s
 ```
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=kyverno -n kyverno --timeout=90s
+```{{exec}}
 
 ## Understanding Kyverno Architecture
 
@@ -36,29 +36,29 @@ Kyverno works as an admission controller that intercepts Kubernetes API requests
 
 Let's check that Kyverno is properly installed:
 
-```bash
-kubectl get pods -n kyverno
 ```
+kubectl get pods -n kyverno
+```{{exec}}
 
 ## Creating Kyverno Policies for FedRAMP Controls
 
 We'll create policies that implement the same controls we did with OPA Gatekeeper. Let's examine our Kyverno policies file:
 
-```bash
-cat /root/kyverno-policies.yaml
 ```
+cat /root/kyverno-policies.yaml
+```{{exec}}
 
 Now, let's apply these policies:
 
-```bash
-kubectl apply -f /root/kyverno-policies.yaml
 ```
+kubectl apply -f /root/kyverno-policies.yaml
+```{{exec}}
 
 Verify that the policies were created:
 
-```bash
-kubectl get cpol
 ```
+kubectl get cpol
+```{{exec}}
 
 ## Examining Key FedRAMP Policies
 
@@ -207,7 +207,7 @@ spec:
 
 Let's test our policies by attempting to deploy a non-compliant pod:
 
-```bash
+```
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: Pod
@@ -219,11 +219,11 @@ spec:
   - name: nginx
     image: nginx:latest
 EOF
-```
+```{{exec}}
 
 This should be blocked by our policies. Now let's create a compliant pod:
 
-```bash
+```
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: Pod
@@ -246,19 +246,21 @@ spec:
         cpu: "50m"
         memory: "64Mi"
 EOF
-```
+```{{exec}}
 
 ## Monitoring and Reporting
 
 Kyverno provides several ways to monitor policy enforcement:
 
-```bash
+```
 # Check policy reports
 kubectl get policyreport -A
+```{{exec}}
 
+```
 # Get detailed information about a specific policy
 kubectl get cpol require-security-labels -o yaml
-```
+```{{exec}}
 
 ## Comparing Kyverno to Gatekeeper
 

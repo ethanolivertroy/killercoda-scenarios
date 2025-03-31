@@ -10,21 +10,23 @@ In this step, we will:
 
 Let's begin by examining the current state of our policies and how they're enforcing FedRAMP controls:
 
-```bash
+```
 # Check OPA Gatekeeper constraints
 kubectl get constraints
+```{{exec}}
 
+```
 # Check Kyverno policies
 kubectl get cpol
-```
+```{{exec}}
 
 ## Mapping Policies to FedRAMP Controls
 
 To demonstrate compliance with FedRAMP, we need to map our policies to specific NIST 800-53 controls. Let's examine our mapping document:
 
-```bash
-cat /root/nist-policy-controls.md
 ```
+cat /root/nist-policy-controls.md
+```{{exec}}
 
 This document maps each of our policies to specific FedRAMP controls and explains how they support compliance.
 
@@ -32,9 +34,9 @@ This document maps each of our policies to specific FedRAMP controls and explain
 
 Let's examine examples of compliant and non-compliant resources:
 
-```bash
-cat /root/policy-compliance-examples.md
 ```
+cat /root/policy-compliance-examples.md
+```{{exec}}
 
 These examples provide clear documentation of what constitutes compliance and can be used as part of your FedRAMP System Security Plan (SSP).
 
@@ -42,16 +44,16 @@ These examples provide clear documentation of what constitutes compliance and ca
 
 Let's examine our audit tool that can be used to verify policy compliance:
 
-```bash
-cat /root/policy-audit-tool.sh
 ```
+cat /root/policy-audit-tool.sh
+```{{exec}}
 
 Now, let's make it executable and run it:
 
-```bash
+```
 chmod +x /root/policy-audit-tool.sh
 /root/policy-audit-tool.sh
-```
+```{{exec}}
 
 This tool checks for:
 1. Policy presence and enforcement
@@ -62,7 +64,7 @@ This tool checks for:
 
 For FedRAMP authorization, you'll need to generate evidence of policy enforcement. Let's create a sample report:
 
-```bash
+```
 # Create a report directory
 mkdir -p ~/fedramp-evidence/policy-enforcement
 
@@ -105,7 +107,7 @@ EOF
 
 # List the generated evidence
 ls -la ~/fedramp-evidence/policy-enforcement/
-```
+```{{exec}}
 
 ## Best Practices for FedRAMP Compliance
 
@@ -124,7 +126,7 @@ When using policy engines for FedRAMP compliance, follow these best practices:
 
 Let's implement a simple cron job that runs our policy audit tool regularly:
 
-```bash
+```
 cat << EOF | kubectl apply -f -
 apiVersion: batch/v1
 kind: CronJob
@@ -158,7 +160,7 @@ spec:
                 memory: "64Mi"
           restartPolicy: OnFailure
 EOF
-```
+```{{exec}}
 
 ## Conclusion
 
