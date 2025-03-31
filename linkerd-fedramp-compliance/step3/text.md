@@ -177,7 +177,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              curl -sSL https://run.linkerd.io/install | sh
+              curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install | sh
               export PATH=\$PATH:\$HOME/.linkerd2/bin
               cat << 'SCRIPT' > /tmp/audit.sh
 $(cat /root/linkerd-security-audit.sh)

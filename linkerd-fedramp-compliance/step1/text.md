@@ -24,8 +24,11 @@ These capabilities map directly to FedRAMP requirements including:
 First, let's download and install the Linkerd CLI which we'll use to manage our service mesh:
 
 ```bash
-# Download and install the stable Linkerd CLI
-curl --proto '=https' --tlsv1.2 -sSfL https://linkerd.github.io/linkerd-stable | sh
+# Download and install the Linkerd CLI
+curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install | sh
+
+# Note: This may install an edge version. For production, consider downloading
+# a specific stable version from https://linkerd.io/releases/
 ```{{exec}}
 
 ### Task 1b: Configure Path and Verify Installation
