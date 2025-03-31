@@ -19,11 +19,8 @@ NIST SP 800-53 defines the security controls required for FedRAMP compliance. Th
 
 ### Identification and Authentication (IA)
 
-- **IA-2 Identification and Authentication (Organizational Users)**: Linkerd should uniquely identify and authenticate services.
-  - *Implementation*: Service account-based identity for Kubernetes workloads
-
-- **IA-3 Device Identification and Authentication**: Linkerd should uniquely identify and authenticate devices before establishing connections.
-  - *Implementation*: SPIFFE-compatible service identity with mTLS certificates
+- **IA-2 Identification and Authentication**: Linkerd should uniquely identify and authenticate services.
+  - *Implementation*: Service account-based identity with SPIFFE-compatible certificates for mutual TLS authentication
 
 - **IA-5 Authenticator Management**: Linkerd should manage system authenticators through certificate issuance and rotation.
   - *Implementation*: Automatic certificate rotation with configurable lifetimes

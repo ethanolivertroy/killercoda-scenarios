@@ -7,7 +7,7 @@ In this step, we'll focus on implementing and validating Linkerd's mTLS capabili
 Linkerd's security model addresses several key FedRAMP requirements:
 
 - **Automatic mTLS**: All service-to-service communication is automatically encrypted (SC-8)
-- **Identity-based security**: Each service has a cryptographic identity for authentication (IA-3)
+- **Service identity**: Each service has a cryptographic identity for authentication (IA-2)
 - **Traffic policy enforcement**: Access controls can be enforced based on service identity (AC-3)
 - **Certificate management**: Automatic rotation of certificates with short lifetimes (IA-5)
 

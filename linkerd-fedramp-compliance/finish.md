@@ -17,7 +17,7 @@ The Linkerd service mesh helps you address these critical FedRAMP controls:
 | Control Family | Controls | Linkerd Implementation |
 |----------------|----------|------------------------|
 | Access Control | AC-3, AC-4, AC-6 | Authorization policies, HTTP routes, least privilege |
-| Identification & Authentication | IA-2, IA-3, IA-5 | Service identity, mTLS, certificate management |
+| Identification & Authentication | IA-2, IA-5 | Service identity, certificate management |
 | System & Communications Protection | SC-7, SC-8, SC-13 | Network segmentation, mTLS encryption, cryptography |
 | Audit & Accountability | AU-2, AU-3, AU-12 | Traffic logging, metrics, continuous monitoring |
 

@@ -123,7 +123,7 @@ spec:
 - Implements AC-3 (Access Enforcement)
 - Follows AC-6 (Least Privilege)
 - Documents authorized communication paths
-- Identity-based authentication (IA-2, IA-3)
+- Identity-based authentication (IA-2)
 - Granular access control
 
 ## Network Policy Examples
@@ -303,8 +303,7 @@ kubectl apply -f security-alerts.yaml
 | AC-3 | Access Enforcement | ServerAuthorization resources | `kind: ServerAuthorization` |
 | AC-4 | Information Flow Control | HTTPRoute resources | `kind: HTTPRoute` |
 | AC-6 | Least Privilege | Fine-grained mesh policies | Specific serviceAccount references |
-| IA-2 | Identification and Authentication | Service identity | SPIFFE identity format |
-| IA-3 | Device Identification and Authentication | mTLS with service identity | Automatic mTLS |
+| IA-2 | Identification and Authentication | Service identity with mTLS | SPIFFE identity format with automatic mTLS |
 | IA-5 | Authenticator Management | Certificate rotation | 30-day certificate validity |
 | SC-7 | Boundary Protection | Policy enforcement points | Server definitions at service boundaries |
 | SC-8 | Transmission Confidentiality and Integrity | Automatic mTLS | Verified by `linkerd edges` |
