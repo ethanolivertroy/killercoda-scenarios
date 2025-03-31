@@ -1,0 +1,186 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-security-labels
+  annotations:
+    policies.kyverno.io/title: Required Security Labels
+    policies.kyverno.io/category: FedRAMP Component Inventory
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod, Deployment, StatefulSet, DaemonSet
+    policies.kyverno.io/description: >-
+      This policy requires that specific security labels are defined in the metadata
+      to ensure proper inventory management for FedRAMP CM-8 compliance.
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+  - name: require-labels
+    match:
+      resources:
+        kinds:
+        - Pod
+        - Deployment
+        - StatefulSet
+        - DaemonSet
+    validate:
+      message: "The following labels are required: app.kubernetes.io/name, security-classification, owner"
+      pattern:
+        metadata:
+          labels:
+            app.kubernetes.io/name: "?*"
+            security-classification: "?*"
+            owner: "?*"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-privileged-containers
+  annotations:
+    policies.kyverno.io/title: Restrict Privileged Containers
+    policies.kyverno.io/category: FedRAMP Least Privilege
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Restricts privileged containers to enforce least privilege principle 
+      required by FedRAMP AC-6.
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+  - name: privileged-containers
+    match:
+      resources:
+        kinds:
+        - Pod
+    validate:
+      message: "Privileged containers are not allowed"
+      pattern:
+        spec:
+          containers:
+          - name: "*"
+            securityContext:
+              privileged: "false" # Use string boolean for pattern matching
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: allowed-image-registries
+  annotations:
+    policies.kyverno.io/title: Allowed Image Registries
+    policies.kyverno.io/category: FedRAMP Least Functionality
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Restricts container images to trusted registries for FedRAMP CM-7 compliance.
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+  - name: validate-registries
+    match:
+      resources:
+        kinds:
+        - Pod
+    validate:
+      message: "Images must come from trusted registries"
+      pattern:
+        spec:
+          containers:
+          - name: "*"
+            # Use regex matching to check image registries
+            image: "{{ regex_match('(gcr.io/my-fedramp-project/|registry.internal.fedramp.gov/|k8s.gcr.io/|docker.io/bitnami/).*', images.containers.*.image) }}"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resource-limits
+  annotations:
+    policies.kyverno.io/title: Resource Limits Required
+    policies.kyverno.io/category: FedRAMP Resource Availability
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Requires CPU and memory limits for all containers to protect against resource
+      exhaustion attacks, supporting FedRAMP SC-6 compliance.
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+  - name: validate-resources
+    match:
+      resources:
+        kinds:
+        - Pod
+    validate:
+      message: "CPU and memory limits are required for all containers"
+      pattern:
+        spec:
+          containers:
+          - name: "*"
+            resources:
+              limits:
+                memory: "?*"
+                cpu: "?*"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-host-namespaces
+  annotations:
+    policies.kyverno.io/title: Disallow Host Namespaces
+    policies.kyverno.io/category: FedRAMP Isolation
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      This policy prevents pods from using host namespaces (network, PID, IPC),
+      supporting FedRAMP SC-7 boundary protection requirements.
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+  - name: host-namespaces-disallowed
+    match:
+      resources:
+        kinds:
+        - Pod
+    validate:
+      message: "Host namespaces (hostNetwork, hostIPC, hostPID) are not allowed"
+      pattern:
+        spec:
+          =(hostNetwork): "false"
+          =(hostIPC): "false"
+          =(hostPID): "false"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-capabilities
+  annotations:
+    policies.kyverno.io/title: Disallow Dangerous Capabilities
+    policies.kyverno.io/category: FedRAMP Least Privilege
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      This policy prevents containers from adding dangerous Linux capabilities,
+      supporting FedRAMP AC-6 least privilege requirements.
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+  - name: disallow-capabilities
+    match:
+      resources:
+        kinds:
+        - Pod
+    validate:
+      message: "Adding dangerous capabilities such as SYS_ADMIN, NET_ADMIN is not allowed"
+      pattern:
+        spec:
+          containers:
+          - name: "*"
+            securityContext:
+              capabilities:
+                add:
+                  X(SYS_ADMIN): "false"
+                  X(NET_ADMIN): "false"
+                  X(SYS_PTRACE): "false"

@@ -52,6 +52,23 @@ This scenario teaches how to implement and assess security controls in Linkerd s
 
 [Run This Scenario](https://killercoda.com/ethanolivertroy/scenario/linkerd-fedramp-compliance)
 
+### 4. Kubernetes Policy Engines for FedRAMP Compliance
+
+![OPA Gatekeeper](https://img.shields.io/badge/OPA-Gatekeeper-000000)
+![Kyverno](https://img.shields.io/badge/Kyverno-Policy-2C90E8)
+![FedRAMP Compliance](https://img.shields.io/badge/FedRAMP-Compliance-0078D6)
+![NIST Standards](https://img.shields.io/badge/NIST-800--53-00BFFF)
+
+This scenario teaches how to implement and audit Kubernetes policy engines (OPA Gatekeeper and Kyverno) to enforce FedRAMP security controls through policy as code.
+
+**What You'll Learn:**
+- How to install and configure OPA Gatekeeper and Kyverno in a Kubernetes cluster
+- How to implement policies that enforce key FedRAMP security controls
+- How to audit policy enforcement and generate compliance documentation
+- How to compare the two approaches and choose the right tool for your environment
+
+[Run This Scenario](https://killercoda.com/ethanolivertroy/scenario/kubernetes-policy-engines)
+
 ## Compliance Frameworks Covered
 
 These scenarios address security controls from:
@@ -61,12 +78,19 @@ These scenarios address security controls from:
   - Identification and Authentication (IA-2, IA-3)
   - System and Communications Protection (SC-7, SC-8, SC-13)
   - Audit and Accountability (AU-2, AU-12)
+  - Configuration Management (CM-7, CM-8)
+  - System and Information Integrity (SI-7)
 
 - **NIST SP 800-204 Series:** Security for Microservices
   - Zero Trust Security Architecture 
   - Service-to-Service Authentication
   - API Security
   - Network Segmentation
+
+- **Policy as Code Frameworks:**
+  - OPA Gatekeeper (Rego-based policies)
+  - Kyverno (YAML-based policies)
+  - Preventative security controls through admission control
 
 ## Getting Started
 
