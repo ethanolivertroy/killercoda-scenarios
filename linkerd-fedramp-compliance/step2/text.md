@@ -110,7 +110,18 @@ spec:
     app: backend
 EOF
 
-# Wait for pods to be ready
+# Check the pods status and wait for them to be ready
+# (This might take 1-2 minutes as Linkerd injects the proxy sidecars)
+echo "Checking pod status. Initial creation may show 'no resources found' - this is normal."
+kubectl get pods -n secure-apps
+
+echo "Waiting 30 seconds for Linkerd to inject proxies and for pods to start..."
+sleep 30
+kubectl get pods -n secure-apps
+
+# Now the pods should be visible, but might still be in "ContainerCreating" state
+# Wait for them to be fully ready
+echo "Waiting for pods to be fully ready..."
 kubectl wait --for=condition=ready pod --all -n secure-apps --timeout=120s
 ```{{exec}}
 
