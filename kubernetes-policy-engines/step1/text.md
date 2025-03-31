@@ -247,7 +247,7 @@ kubectl get constraints
 We can examine audit results to see resources that were created before our policies or were exempted:
 
 ```
-kubectl get constraint require-security-labels -o yaml
+kubectl get k8srequiredlabels.constraints.gatekeeper.sh/require-security-labels -o yaml
 ```{{exec}}
 
 This completes our implementation of OPA Gatekeeper policies for key FedRAMP controls. In the next step, we'll implement equivalent policies using Kyverno.
