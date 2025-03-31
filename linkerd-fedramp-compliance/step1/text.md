@@ -47,68 +47,15 @@ This command ensures your Kubernetes cluster meets all the requirements for a Li
 Now, let's install Linkerd with enhanced security settings that align with FedRAMP requirements:
 
 ```bash
-# Create a namespace for Linkerd
-kubectl create namespace linkerd
+# Install the Linkerd CRDs first
+linkerd install --crds | kubectl apply -f -
 
-# Generate custom configuration with enhanced security
-cat << EOF > /root/linkerd-values.yaml
-# Identity settings
-identity:
-  issuer:
-    scheme: kubernetes.io/serviceaccount
-  # Set shorter certificate lifetimes for compliance with IA-5
-  externalCA: false
-  # Reduce trust anchor validity duration for security
-  trustAnchorsPEM: ""
-  # Increase clock skew allowance for reliability
-  clockSkewAllowance: 20s
-
-# Proxy configuration
-proxy:
-  # Enable privileged context for Kubernetes security
-  enableExternalProfiles: false
-  resources:
-    cpu:
-      limit: "1"
-      request: "100m"
-    memory:
-      limit: "250Mi"
-      request: "20Mi"
-  # Enhanced security settings
-  opaquePorts: "25,443,587,3306,5432,11211"
-
-# Control plane settings
-controllerReplicas: 3
-controllerResources:
-  cpu:
-    limit: "1"
-    request: "100m"
-  memory:
-    limit: "250Mi"
-    request: "50Mi"
-
-# Policy controller for FedRAMP access control (AC-3, AC-4)
-policyController:
-  enable: true
-
-# Prometheus settings for monitoring (AU-2, AU-12, SI-4)
-prometheusUrl: ""
-
-# Destination controller security settings
-destinationController:
-  otherPorts: 8081
-  isolateDestinationNamespaces: true
-
-# Heartbeat controller settings
-heartbeatSchedule: "0 0 * * *"
-heartbeatDisableHeartbeat: false
-
-# Default settings - do not change
-cniEnabled: false
-EOF
-
-# Install Linkerd with our custom configuration
-linkerd install --values /root/linkerd-values.yaml | kubectl apply -f -
+# Now install the Linkerd control plane with enhanced security settings for FedRAMP
+linkerd install \
+  --set proxyInit.runAsRoot=true \
+  --set proxy.opaquePorts="25,443,587,3306,5432,11211" \
+  --set identity.issuer.scheme=kubernetes.io/serviceaccount \
+  | kubectl apply -f -
 
 # Wait for Linkerd to be ready
 kubectl wait --for=condition=ready pod --all -n linkerd --timeout=300s

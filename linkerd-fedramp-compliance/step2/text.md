@@ -136,6 +136,12 @@ This verifies that Linkerd has established mTLS between our services, meeting SC
 FedRAMP requires fine-grained access control (AC-3, AC-4). Linkerd supports this through authorization policies:
 
 ```bash
+# First install the policy controller if it wasn't installed with the initial install
+kubectl apply -f https://github.com/linkerd/linkerd2/releases/download/edge-25.3.4/linkerd-policy-controller.yaml
+
+# Wait for the policy controller to be ready
+kubectl wait --for=condition=ready pod -l component=policy-controller -n linkerd --timeout=120s
+
 # Create a server authorization policy to restrict access to the backend service
 cat << EOF | kubectl apply -f -
 apiVersion: policy.linkerd.io/v1beta1

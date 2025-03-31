@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# Check that Linkerd is installed
+# Check that Linkerd is installed with basic components
 if kubectl get namespace linkerd &>/dev/null; then
   if kubectl get deployment linkerd-identity -n linkerd &>/dev/null; then
-    # Check that Linkerd controller is running
-    if [ $(kubectl get pods -n linkerd --field-selector=status.phase=Running | grep -c linkerd-controller) -gt 0 ]; then
-      # Check that proxy-injector is installed
-      if kubectl get deployment linkerd-proxy-injector -n linkerd &>/dev/null; then
-        echo "Great! You've successfully installed a secure Linkerd service mesh with FedRAMP-compliant configuration."
-        exit 0
-      fi
+    # Check that key components are running
+    IDENTITY_READY=$(kubectl get deployment linkerd-identity -n linkerd -o jsonpath='{.status.readyReplicas}')
+    PROXY_INJECTOR_READY=$(kubectl get deployment linkerd-proxy-injector -n linkerd -o jsonpath='{.status.readyReplicas}')
+    
+    if [ "$IDENTITY_READY" -gt 0 ] && [ "$PROXY_INJECTOR_READY" -gt 0 ]; then
+      echo "Great! You've successfully installed a secure Linkerd service mesh with FedRAMP-compliant configuration."
+      exit 0
     fi
   fi
 fi
