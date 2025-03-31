@@ -19,8 +19,8 @@ if ! kubectl get constrainttemplates | grep -q "K8sRequiredLabels"; then
 fi
 
 # Check if constraints have been created
-if ! kubectl get constraints | grep -q "require-security-labels"; then
-  echo "Required constraints not found"
+if ! kubectl get k8srequiredlabels.constraints.gatekeeper.sh require-security-labels &>/dev/null; then
+  echo "Required constraint require-security-labels not found"
   exit 1
 fi
 
