@@ -47,10 +47,13 @@ This command ensures your Kubernetes cluster meets all the requirements for a Li
 Now, let's install Linkerd with enhanced security settings that align with FedRAMP requirements:
 
 ```bash
-# Install the Linkerd CRDs first
+# Install Gateway API CRDs first
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
+
+# Now install the Linkerd CRDs
 linkerd install --crds | kubectl apply -f -
 
-# Now install the Linkerd control plane with enhanced security settings for FedRAMP
+# Install the Linkerd control plane with enhanced security settings for FedRAMP
 linkerd install \
   --set proxyInit.runAsRoot=true \
   --set proxy.opaquePorts="25,443,587,3306,5432,11211" \
