@@ -257,74 +257,51 @@ kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s -X POST http:/
 
 ## FedRAMP Compliance Check
 
-Let's review how our Linkerd implementation addresses key FedRAMP requirements from NIST SP 800-53 Rev 5:
+Let's review how our Linkerd implementation addresses key FedRAMP requirements from NIST SP 800-53 Rev 5, distinguishing between direct and supporting capabilities:
 
-### System and Communications Protection (SC)
+### Primary Security Controls Directly Implemented
 
-1. **SC-8 (Transmission Confidentiality and Integrity)**:
-   - Verified mTLS encryption between all services
-   - All inter-service traffic is automatically encrypted
+#### Transmission Security and Cryptography
+- **SC-8**: Our demonstration confirms mTLS encryption between all services
+- **SC-13**: Linkerd implements TLS 1.3 with strong ECDSA P-256 algorithms
+- **SC-23**: We've verified mutual authentication between services via mTLS
 
-2. **SC-13 (Cryptographic Protection)**:
-   - Linkerd uses validated cryptography with TLS 1.3
-   - Strong cryptographic algorithms (ECDSA P-256) for service certificates
+#### Access Management
+- **AC-3**: Our server authorization policies successfully restricted access based on identity
+- **AC-4**: HTTP route policies effectively controlled information flow between services
 
-3. **SC-17 (Public Key Infrastructure Certificates)**:
-   - Linkerd operates a PKI for issuing service identity certificates
-   - Certificates are automatically issued to services
+#### Service Identity
+- **IA-2**: Each service received a cryptographically verifiable SPIFFE identity
+- **IA-5**: Certificate rotation is configured with appropriate short lifetimes
 
-4. **SC-23 (Session Authenticity)**:
-   - mTLS provides mutual authentication between services
-   - Session integrity is protected via TLS
+### Supporting Security Capabilities
 
-### Access Control (AC)
+These controls are partially addressed and require integration with additional systems:
 
-1. **AC-3 (Access Enforcement)**:
-   - Server authorization policies restrict service access based on identity
-   - Verified that unauthorized services are denied access
+#### Extended Protection
+- **SC-17**: Linkerd's PKI for service certificates provides workload identity
+- **AC-6**: Our authorization policies implement least privilege for service communication
 
-2. **AC-4 (Information Flow Control)**:
-   - HTTP route policies control information flow between services
-   - Traffic can be controlled based on paths, methods, and more
+#### Monitoring and Audit
+- **AU-2/AU-3**: Access logs capture detailed information, but require collection infrastructure
+- **AU-12**: Metrics and logs are generated but need external storage and analysis
+- **SI-4**: The service mesh provides golden metrics but requires dashboarding
+- **SI-7**: Data integrity in transit is protected via cryptographic verification
 
-3. **AC-6 (Least Privilege)**:
-   - Granular access controls limit communications to only what is necessary
-   - Each service only has access to authorized services
+### Implementation Verification
 
-### Identification and Authentication (IA)
+Our demonstration has validated the following security aspects:
 
-1. **IA-2 (Identification and Authentication - Organizational Users)**:
-   - Each service has a unique SPIFFE identity tied to its service account
-   - Services are uniquely identified via cryptographic verification
-   - Identity is verified before any communication is permitted
+1. **Policy Enforcement**: We confirmed that unauthorized pods cannot access protected services
+2. **Identity Verification**: Services establish secure connections using unique identities
+3. **Communication Security**: All traffic between services is encrypted via mTLS
+4. **Fine-grained Control**: We implemented and tested path-based access controls
+5. **Observability**: Metrics capture security-relevant events for auditing
 
-2. **IA-5 (Authenticator Management)**:
-   - Service certificates are automatically rotated with short lifetimes
-   - Trust chain is cryptographically verified during communication
-   - Certificates handle authentication between services
-
-### Audit and Accountability (AU)
-
-1. **AU-2 (Audit Events)**:
-   - Linkerd proxies generate detailed logs for all inter-service communication
-   - Both allowed and denied access attempts are recorded
-
-2. **AU-3 (Content of Audit Records)**:
-   - Logs contain detailed information including source/destination service identity
-   - Timestamps and access decisions are included in records
-
-3. **AU-12 (Audit Generation)**:
-   - Automatic collection of service-to-service communication data
-   - Metrics provide visibility into access patterns
-
-### System and Information Integrity (SI)
-
-1. **SI-4 (Information System Monitoring)**:
-   - Provides golden metrics for inter-service communication health and security
-   - Real-time monitoring of service mesh traffic
-
-2. **SI-7 (Software, Firmware, and Information Integrity)**:
-   - Ensures integrity of data in transit via mTLS
-   - Validates service identity before communication is permitted
+To complete a comprehensive FedRAMP implementation, you would need to integrate Linkerd with:
+- External logging and SIEM systems
+- Long-term metrics storage
+- Certificate management systems
+- Alerting infrastructure
 
 In the next step, we'll focus on auditing our service mesh and generating compliance evidence.

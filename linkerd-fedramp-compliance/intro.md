@@ -47,31 +47,32 @@ Organizations choose Linkerd over other service meshes for several key reasons:
 
 ## Linkerd and FedRAMP Compliance
 
-Linkerd offers a streamlined approach to implementing many NIST 800-53 controls. Below are the key security control families where Linkerd provides direct capabilities:
+Linkerd offers a streamlined approach to implementing many NIST 800-53 controls. Below we distinguish between the strongest direct mappings and controls where Linkerd provides supplementary or partial capabilities.
 
-### System and Communications Protection (SC)
-- **SC-8/SC-13**: Transmission Confidentiality and Integrity through automatic mTLS
-- **SC-7**: Boundary Protection through internal network segmentation via policies
-- **SC-12**: Cryptographic Key Management through certificate lifecycle management
-- **SC-17**: PKI Certificates through automatic identity certificate issuance
-- **SC-23**: Session Authenticity through mutual TLS authentication
+### Strongest Direct Control Mappings
 
-### Access Control (AC)
-- **AC-3**: Access Enforcement through authorization policies for service-to-service comms
-- **AC-4**: Information Flow Control through defining allowed communication paths
-- **AC-6**: Least Privilege principles through granular service-to-service policies
+These controls are directly implemented or significantly addressed by Linkerd features:
 
-### Identification and Authentication (IA)
-- **IA-2**: Identification and Authentication (Organizational Users) applied to services, where each service has a unique identity
-- **IA-5**: Authenticator Management through automatic certificate rotation and lifecycle
+- **SC-8**: Transmission Confidentiality and Integrity through automatic mTLS
+- **SC-13**: Cryptographic Protection using strong TLS implementations
+- **SC-23**: Session Authenticity through mutual service authentication
+- **AC-3**: Access Enforcement via service authorization policies
+- **AC-4**: Information Flow Control between mesh services
+- **IA-2**: Service Identity with SPIFFE-compatible certificates
+- **IA-5**: Certificate Lifecycle Management and rotation
 
-### Audit and Accountability (AU)
-- **AU-2/AU-3**: Audit Events and Content through detailed proxied traffic logs
-- **AU-12**: Audit Generation through creation of metrics and logs for mesh traffic
+### Supporting Control Mappings
 
-### System and Information Integrity (SI)
-- **SI-4**: Information System Monitoring through metrics and golden signals
-- **SI-7**: Software and Information Integrity through ensuring data integrity in transit
+Linkerd contributes to these controls but typically requires integration with other systems:
+
+- **SC-7**: Internal Boundary Protection via service policies (complementing network policies)
+- **SC-12**: Cryptographic Key Management limited to service certificates
+- **SC-17**: PKI Certificates for workload identity (not human identities)
+- **AC-6**: Least Privilege for service-to-service communication
+- **AU-2/AU-3**: Audit Events captured but requires external collection
+- **AU-12**: Audit Generation specific to service-to-service interactions
+- **SI-4**: Monitoring of service communication (requires dashboards/alerting)
+- **SI-7**: Data Integrity verification in transit between services
 
 **Important Note on Scope**: Linkerd primarily addresses internal service-to-service communication security within a Kubernetes cluster. It does not address remote access (AC-17) into the cluster from external networks - that requires complementary solutions like VPNs, API gateways, or ingress controllers.
 
