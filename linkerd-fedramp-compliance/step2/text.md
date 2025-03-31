@@ -147,15 +147,13 @@ This verifies that Linkerd has established mTLS between our services, meeting SC
 FedRAMP requires fine-grained access control (AC-3, AC-4). Linkerd supports this through authorization policies:
 
 ```bash
-# First install the policy controller if it wasn't installed with the initial install
-kubectl apply -f https://github.com/linkerd/linkerd2/releases/download/edge-25.3.4/linkerd-policy-controller.yaml
-
-# Wait for the policy controller to be ready
-kubectl wait --for=condition=ready pod -l component=policy-controller -n linkerd --timeout=120s
+# The policy controller is now included in the default installation
+# Check that policy components are installed
+kubectl get deploy -n linkerd | grep policy
 
 # Create a server authorization policy to restrict access to the backend service
 cat << EOF | kubectl apply -f -
-apiVersion: policy.linkerd.io/v1beta1
+apiVersion: policy.linkerd.io/v1beta3
 kind: Server
 metadata:
   name: backend-server
@@ -167,17 +165,16 @@ spec:
   port: 80
   proxyProtocol: HTTP/1
 ---
-apiVersion: policy.linkerd.io/v1beta1
+apiVersion: policy.linkerd.io/v1beta3
 kind: ServerAuthorization
 metadata:
   name: backend-server-auth
   namespace: secure-apps
 spec:
-  server:
-    name: backend-server
-    namespace: secure-apps
+  server: backend-server
   client:
     # Only allow the frontend service to access the backend service
+    unauthenticated: false
     meshTLS:
       serviceAccounts:
         - name: frontend
@@ -196,12 +193,18 @@ kubectl delete pod test-pod -n secure-apps
 kubectl run test-pod --image=nginx:alpine -n secure-apps
 kubectl wait --for=condition=ready pod/test-pod -n secure-apps --timeout=60s
 
+# Install curl in the test pod since wget isn't available
+kubectl exec -it test-pod -n secure-apps -c test-pod -- apk add --no-cache curl
+
 # Try to access the backend service from the test pod (should be denied)
-kubectl exec -it test-pod -n secure-apps -- wget -O- http://backend.secure-apps.svc.cluster.local --timeout=5 || echo "Access denied as expected"
+kubectl exec -it test-pod -n secure-apps -c test-pod -- curl -s http://backend.secure-apps.svc.cluster.local --max-time 5 || echo "Access denied as expected"
+
+# Install curl in the frontend pod
+FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
+kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- apk add --no-cache curl
 
 # Try to access the backend service from the frontend pod (should be allowed)
-FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
-kubectl exec -it $FRONTEND_POD -n secure-apps -- wget -O- http://backend.secure-apps.svc.cluster.local
+kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend.secure-apps.svc.cluster.local
 ```{{exec}}
 
 ## Task 4: Implement MTLS and Certificate Validation
@@ -228,7 +231,7 @@ Let's implement a more complex policy scenario to validate Linkerd's security ca
 # For this version of Linkerd, we'll use a simpler approach to verify security
 # Create a basic route rule that allows all traffic to backend but captures metrics
 cat << EOF | kubectl apply -f -
-apiVersion: policy.linkerd.io/v1alpha1
+apiVersion: policy.linkerd.io/v1beta1
 kind: HTTPRoute
 metadata:
   name: backend-route
@@ -245,11 +248,11 @@ spec:
         value: /
 EOF
 
-# Test the route policy
-kubectl exec -it $FRONTEND_POD -n secure-apps -- wget -O- http://backend.secure-apps.svc.cluster.local
+# Test the route policy with GET
+kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend.secure-apps.svc.cluster.local
 
-# This should be denied (POST method)
-kubectl exec -it $FRONTEND_POD -n secure-apps -- wget --method=POST -O- http://backend.secure-apps.svc.cluster.local || echo "POST denied as expected"
+# Send a POST request (this should still work with our basic route)
+kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s -X POST http://backend.secure-apps.svc.cluster.local || echo "POST request failed"
 ```{{exec}}
 
 ## FedRAMP Compliance Check
