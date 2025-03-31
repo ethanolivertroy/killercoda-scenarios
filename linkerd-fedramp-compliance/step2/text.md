@@ -13,7 +13,9 @@ Linkerd's security model addresses several key FedRAMP requirements:
 
 ## Task 1: Deploy Sample Microservices
 
-Let's deploy sample microservices to demonstrate Linkerd's security capabilities:
+### Task 1a: Create Namespace and Prepare Environment
+
+Let's create a namespace for our demo applications and configure it for automatic Linkerd injection:
 
 ```bash
 # Create a namespace for our applications
@@ -21,8 +23,14 @@ kubectl create namespace secure-apps
 
 # Annotate the namespace for Linkerd injection
 kubectl annotate namespace secure-apps linkerd.io/inject=enabled
+```{{exec}}
 
-# Deploy sample applications
+### Task 1b: Deploy Microservice Components
+
+Now let's deploy our sample front-end and back-end microservices:
+
+```bash
+# Deploy sample applications with service accounts, deployments, and services
 cat << EOF | kubectl apply -f -
 ---
 apiVersion: v1
@@ -109,48 +117,69 @@ spec:
   selector:
     app: backend
 EOF
+```{{exec}}
 
-# Check the pods status and wait for them to be ready
-# (This might take 1-2 minutes as Linkerd injects the proxy sidecars)
-echo "Checking pod status. Initial creation may show 'no resources found' - this is normal."
+### Task 1c: Wait for Linkerd Injection and Pod Readiness
+
+Now we need to wait for Linkerd to inject its proxies and for the pods to become ready:
+
+```bash
+# Check initial pod status - may show no resources initially, which is normal
+echo "Checking initial pod status..."
 kubectl get pods -n secure-apps
 
-echo "Waiting 30 seconds for Linkerd to inject proxies and for pods to start..."
+# Wait for Linkerd to inject proxies and for pods to start
+echo "Waiting for Linkerd to inject proxies and for pods to start..."
 sleep 30
 kubectl get pods -n secure-apps
 
-# Now the pods should be visible, but might still be in "ContainerCreating" state
-# Wait for them to be fully ready
+# Wait for pods to become fully ready
 echo "Waiting for pods to be fully ready..."
 kubectl wait --for=condition=ready pod --all -n secure-apps --timeout=120s
 ```{{exec}}
 
 ## Task 2: Verify mTLS Encryption
 
-Linkerd automatically establishes mTLS between meshed services. Let's verify this:
+### Task 2a: Check Proxy Injection
+
+First, let's verify that our pods have been properly injected with the Linkerd proxy:
 
 ```bash
 # Check that the pods have been injected with the Linkerd proxy
 kubectl get pods -n secure-apps -o jsonpath='{.items[*].metadata.name}' | xargs -n1 kubectl -n secure-apps get pod -o yaml | grep linkerd.io/proxy-status
+```{{exec}}
 
-# Verify that mTLS is enabled for our services
+### Task 2b: Verify mTLS Connections
+
+Now, let's confirm that mTLS is properly enabled between our services:
+
+```bash
+# Verify that mTLS is enabled for our services (check for √ in the SECURED column)
 linkerd viz edges -n secure-apps deployment
 
-# Check the detailed stats
+# Check the detailed traffic statistics
 linkerd viz stat -n secure-apps deployment
 ```{{exec}}
 
-This verifies that Linkerd has established mTLS between our services, meeting SC-8 requirements for encrypted communications.
+This verification confirms that Linkerd has established mTLS between our services, meeting SC-8 requirements for encrypted communications.
 
 ## Task 3: Implement Authorization Policies
 
-FedRAMP requires fine-grained access control (AC-3, AC-4). Linkerd supports this through authorization policies:
+### Task 3a: Verify Policy Controller
+
+Let's first verify that the Linkerd policy controller is installed:
 
 ```bash
 # The policy controller is now included in the default installation
 # Check that policy components are installed
 kubectl get deploy -n linkerd | grep policy
+```{{exec}}
 
+### Task 3b: Create Authorization Policies
+
+Now let's create a server authorization policy to restrict access to the backend service:
+
+```bash
 # Create a server authorization policy to restrict access to the backend service
 cat << EOF | kubectl apply -f -
 apiVersion: policy.linkerd.io/v1beta3
@@ -180,8 +209,14 @@ spec:
         - name: frontend
           namespace: secure-apps
 EOF
+```{{exec}}
 
-# Create a test pod to verify that unauthorized access is denied
+### Task 3c: Prepare Test Pod for Access Testing
+
+Let's create a test pod to verify that unauthorized access is denied:
+
+```bash
+# Create a test pod for validation
 kubectl run test-pod --image=nginx:alpine -n secure-apps
 kubectl wait --for=condition=ready pod/test-pod -n secure-apps --timeout=60s
 
@@ -193,12 +228,24 @@ kubectl delete pod test-pod -n secure-apps
 kubectl run test-pod --image=nginx:alpine -n secure-apps
 kubectl wait --for=condition=ready pod/test-pod -n secure-apps --timeout=60s
 
-# Install curl in the test pod since wget isn't available
+# Install curl in the test pod for testing
 kubectl exec -it test-pod -n secure-apps -c test-pod -- apk add --no-cache curl
+```{{exec}}
 
+### Task 3d: Test Unauthorized Access
+
+Let's verify that unauthorized pods cannot access the backend service:
+
+```bash
 # Try to access the backend service from the test pod (should be denied)
 kubectl exec -it test-pod -n secure-apps -c test-pod -- curl -s http://backend.secure-apps.svc.cluster.local --max-time 5 || echo "Access denied as expected"
+```{{exec}}
 
+### Task 3e: Test Authorized Access
+
+Now let's verify that the frontend pod (which is authorized) can access the backend service:
+
+```bash
 # Install curl in the frontend pod
 FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
 kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- apk add --no-cache curl
@@ -209,30 +256,45 @@ kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend
 
 ## Task 4: Verify mTLS and Certificate Configuration
 
-Let's examine how Linkerd manages certificates, which is essential for FedRAMP's cryptographic requirements (SC-13, IA-5):
+### Task 4a: Check Proxy Metrics
+
+Let's examine Linkerd's mTLS metrics, which are essential for FedRAMP's cryptographic requirements:
 
 ```bash
 # Check the Linkerd proxy metrics to verify mTLS is working
 linkerd viz stat -n secure-apps deployment/frontend
+```{{exec}}
 
+### Task 4b: Inspect Proxy Configuration
+
+Let's inspect the proxy version and configuration:
+
+```bash
 # View information about the proxy injection
 FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
 kubectl get pod $FRONTEND_POD -n secure-apps -o yaml | grep -A5 linkerd.io/proxy-version
 
 # Check the proxy status annotation
 kubectl get pod $FRONTEND_POD -n secure-apps -o jsonpath='{.metadata.annotations.linkerd\.io/proxy-status}'
+```{{exec}}
 
+### Task 4c: Verify mTLS Connections
+
+Let's check the mTLS status for all connections in our namespace:
+
+```bash
 # View the mTLS status for connections in the secure-apps namespace
 linkerd viz edges deployment -n secure-apps
 ```{{exec}}
 
-## Task 5: Security Policy Testing and Validation
+## Task 5: Implement and Test HTTP Route Policies
 
-Let's implement a more complex policy scenario to validate Linkerd's security capabilities:
+### Task 5a: Create HTTP Route Policy
+
+Let's implement an HTTP route policy to further demonstrate Linkerd's security capabilities:
 
 ```bash
-# For this version of Linkerd, we'll use a simpler approach to verify security
-# Create a basic route rule that allows all traffic to backend but captures metrics
+# Create a basic HTTP route rule that allows all traffic to backend but captures metrics
 cat << EOF | kubectl apply -f -
 apiVersion: policy.linkerd.io/v1beta1
 kind: HTTPRoute
@@ -250,12 +312,20 @@ spec:
         type: PathPrefix
         value: /
 EOF
+```{{exec}}
 
+### Task 5b: Test GET Request
+
+Let's test the HTTP route policy with a GET request:
+
+```bash
 # Test the route policy with GET
 kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend.secure-apps.svc.cluster.local
 ```{{exec}}
 
-Now let's try a POST request:
+### Task 5c: Test POST Request
+
+Now let's try a POST request to verify different HTTP methods:
 
 ```bash
 # Send a POST request (this should still work with our basic route)
