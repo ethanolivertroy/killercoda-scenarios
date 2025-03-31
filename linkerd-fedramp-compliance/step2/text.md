@@ -207,20 +207,23 @@ kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- apk add --no-cache cur
 kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend.secure-apps.svc.cluster.local
 ```{{exec}}
 
-## Task 4: Implement MTLS and Certificate Validation
+## Task 4: Verify mTLS and Certificate Configuration
 
 Let's examine how Linkerd manages certificates, which is essential for FedRAMP's cryptographic requirements (SC-13, IA-5):
 
 ```bash
-# Check certificate information in the Linkerd data plane
-linkerd diagnostics proxy -n secure-apps deployment/frontend --tap
+# Check the Linkerd proxy metrics to verify mTLS is working
+linkerd viz stat -n secure-apps deployment/frontend
 
-# View the certificate details
+# View information about the proxy injection
 FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
-kubectl exec -it $FRONTEND_POD -n secure-apps -c linkerd-proxy -- env | grep LINKERD
+kubectl get pod $FRONTEND_POD -n secure-apps -o yaml | grep -A5 linkerd.io/proxy-version
 
-# Check the identity certificate expiration
-kubectl exec -it $FRONTEND_POD -n secure-apps -c linkerd-proxy -- ls -la /var/run/linkerd/identity/
+# Check the proxy status annotation
+kubectl get pod $FRONTEND_POD -n secure-apps -o jsonpath='{.metadata.annotations.linkerd\.io/proxy-status}'
+
+# View the mTLS status for connections to and from the frontend
+linkerd viz edges pod/$FRONTEND_POD -n secure-apps
 ```{{exec}}
 
 ## Task 5: Security Policy Testing and Validation
