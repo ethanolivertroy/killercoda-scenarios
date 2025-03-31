@@ -31,7 +31,8 @@
         {"file": "nist-linkerd-guidance.md", "target": "/root", "chmod": "+w"},
         {"file": "sample-microservices.yaml", "target": "/root", "chmod": "+w"},
         {"file": "security-audit-tool.sh", "target": "/root", "chmod": "+x"},
-        {"file": "linkerd-compliance-examples.md", "target": "/root", "chmod": "+w"}
+        {"file": "linkerd-compliance-examples.md", "target": "/root", "chmod": "+w"},
+        {"file": "images/linkerd-logo.png", "target": "/root/images", "chmod": "+r"}
       ]
     }
   },

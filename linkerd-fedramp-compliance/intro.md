@@ -1,5 +1,7 @@
 # Linkerd Service Mesh for FedRAMP Compliance
 
+![Linkerd Logo](/root/images/linkerd-logo.png)
+
 Welcome to the Linkerd Service Mesh for FedRAMP Compliance workshop!
 
 ## What is Linkerd?
