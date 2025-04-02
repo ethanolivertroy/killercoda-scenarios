@@ -6,10 +6,11 @@ The foundation of FedRAMP compliance in a service mesh environment starts with a
 
 Service meshes provide critical security capabilities that align with FedRAMP requirements:
 
-- **Zero Trust Architecture** (AC-3, SC-7): Istio enables a zero trust model by enforcing authentication and authorization for all service-to-service communication
-- **Transport Layer Security** (SC-8, SC-13): Istio provides automatic mTLS for encrypted communications
+- **Zero Trust Architecture** (AC-3, AC-6, SC-7): Istio enables a zero trust model by enforcing authentication and authorization for all service-to-service communication
+- **Transport Layer Security** (SC-8, SC-12, SC-13, SC-17): Istio provides automatic mTLS for encrypted communications with automated certificate management
 - **Centralized Policy Management** (CM-6, CM-7): Consistent enforcement of security policies across services
-- **Strong Identity** (IA-2, IA-3): Service identity based on cryptographic attestation
+- **Strong Identity** (IA-2, IA-3, IA-5, IA-8): Service identity based on cryptographic attestation and JWT authentication
+- **Comprehensive Monitoring** (AU-2, AU-3, AU-12, SI-4): Detailed telemetry for service interactions
 
 ## Task 1: Install Istio with Secure Configuration
 
@@ -41,6 +42,16 @@ spec:
           limits:
             cpu: 1000m
             memory: 2048Mi
+        env:
+          # Certificate management settings (SC-12, SC-17, IA-5)
+          - name: PILOT_CERT_PROVIDER
+            value: "istiod"
+          - name: PILOT_MAX_WORKLOAD_CERT_TTL
+            value: "24h"    # Max certificate lifetime
+          - name: PILOT_WORKLOAD_CERT_TTL
+            value: "21h"    # Default certificate lifetime
+          - name: PILOT_WORKLOAD_CERT_MIN_GRACE
+            value: "3h"     # Minimum time before expiration for rotation
     ingressGateways:
     - name: istio-ingressgateway
       enabled: true
@@ -55,11 +66,11 @@ spec:
         hpaSpec:
           minReplicas: 1
   meshConfig:
-    # Enable access logging for audit trails (AU-2, AU-3)
+    # Enable access logging for audit trails (AU-2, AU-3, SI-4)
     accessLogFile: "/dev/stdout"
-    # Enable automatic mTLS (SC-8, SC-13)
+    # Enable automatic mTLS (SC-8, SC-12, SC-13, SC-17)
     enableAutoMtls: true
-    # Deny external traffic by default (AC-3, SC-7)
+    # Deny external traffic by default (AC-3, AC-6, SC-7)
     outboundTrafficPolicy:
       mode: REGISTRY_ONLY
 EOF

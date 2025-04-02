@@ -4,10 +4,12 @@ In this step, we'll deploy microservices and implement authentication controls a
 
 ## Background: Authentication in Service Meshes
 
-FedRAMP requires strong authentication controls (IA-2, IA-3, IA-5):
+FedRAMP requires strong authentication controls (IA-2, IA-3, IA-5, IA-8):
 
 - **Service Identity** (IA-3): Each service must have a cryptographically verifiable identity
 - **Mutual Authentication** (IA-2): Services must authenticate to each other
+- **External User Authentication** (IA-8): Non-organizational users must be authenticated (via JWT)
+- **Certificate Management** (IA-5, SC-12, SC-17): Credentials must be properly managed and rotated
 - **Transport Encryption** (SC-8): All communications must be encrypted
 - **Authentication Policies** (AC-3): Policies should dictate which services can communicate
 

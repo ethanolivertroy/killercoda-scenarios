@@ -113,6 +113,7 @@ spec:
 - Relies solely on service identity (insufficient for user-facing services)
 - Violates IA-2 (Identification and Authentication)
 - Violates IA-5 (Authenticator Management)
+- Violates IA-8 (Identification and Authentication of Non-Organizational Users)
 
 ### Compliant: JWT Authentication with Enforcement
 
@@ -164,6 +165,7 @@ spec:
 - Checks token issuer and expiration
 - Complies with IA-2 (Identification and Authentication)
 - Complies with IA-5 (Authenticator Management)
+- Complies with IA-8 (Identification and Authentication - Non-Organizational Users)
 - Complies with AC-3 (Access Enforcement)
 
 ## Network Security Examples
@@ -273,6 +275,62 @@ spec:
 - Complies with SC-8 (Transmission Confidentiality and Integrity)
 - Complies with AC-4 (Information Flow Control)
 
+## Certificate Management Examples
+
+### Non-Compliant: Manual or Missing Certificate Management
+
+```yaml
+# No automated certificate management
+# Manual certificate generation and distribution
+# No certificate rotation policy
+# No validation of certificate provenance
+```
+
+**Issues:**
+- Manual certificate management prone to errors
+- No automatic certificate rotation
+- Risk of expired certificates
+- No centralized control over certificate lifecycle
+- Violates SC-12 (Cryptographic Key Establishment and Management)
+- Violates SC-17 (Public Key Infrastructure Certificates)
+- Violates IA-5 (Authenticator Management)
+
+### Compliant: Automated Certificate Management
+
+```yaml
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  # Secure CA (istiod) configuration
+  components:
+    pilot:
+      k8s:
+        env:
+          # Set the grace period for workload certificate rotation
+          - name: PILOT_CERT_PROVIDER
+            value: "istiod"
+          - name: PILOT_MAX_WORKLOAD_CERT_TTL
+            value: "24h"    # Max certificate lifetime
+          - name: PILOT_WORKLOAD_CERT_TTL
+            value: "21h"    # Default certificate lifetime
+          - name: PILOT_WORKLOAD_CERT_MIN_GRACE
+            value: "3h"     # Minimum time before expiration for rotation
+  values:
+    global:
+      # Use the Kubernetes service account as identity
+      caAddress: istiod.istio-system.svc:15012
+      pilotCertProvider: istiod
+```
+
+**Benefits:**
+- Automated certificate generation and distribution
+- Automatic rotation before expiration
+- Centralized certificate management
+- Secured certificate signing and validation
+- Complies with SC-12 (Cryptographic Key Establishment and Management)
+- Complies with SC-17 (Public Key Infrastructure Certificates)
+- Complies with IA-5 (Authenticator Management)
+
 ## Monitoring and Audit Examples
 
 ### Non-Compliant: Missing Monitoring
@@ -332,6 +390,175 @@ spec:
 - Complies with AU-12 (Audit Generation)
 - Complies with SI-4 (Information System Monitoring)
 
+## Container Security Examples
+
+### Non-Compliant: Insecure Container Configurations
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insecure-deployment
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: insecure-app
+  template:
+    metadata:
+      labels:
+        app: insecure-app
+    spec:
+      containers:
+      - name: app
+        image: example/app:latest
+        # No resource limits
+        # No image pull policy
+        securityContext:
+          privileged: true
+          runAsUser: 0
+        # No liveness or readiness probes
+```
+
+**Issues:**
+- Uses 'latest' tag for container image
+- No resource limits (could lead to DoS)
+- Runs as privileged container
+- Runs as root user (UID 0)
+- No image pull policy specified
+- No liveness or readiness probes
+- No Pod Security Standards enforcement
+- Violates CM-7 (Least Functionality)
+- Violates SR-3 (Supply Chain Controls and Processes)
+
+### Compliant: Secure Container Configuration
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-deployment
+  namespace: secure-apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: secure-app
+  template:
+    metadata:
+      labels:
+        app: secure-app
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: app
+        image: example/app:v1.0.0@sha256:abc123...  # Pinned version with digest
+        imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsUser: 1000
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+```
+
+**Benefits:**
+- Uses pinned image version with digest
+- Always pulls images (prevents using potentially compromised cached images)
+- Runs as non-root user
+- Drops all capabilities
+- Uses read-only root filesystem
+- Prevents privilege escalation
+- Sets appropriate resource limits and requests
+- Implements health and readiness probes
+- Complies with CM-7 (Least Functionality)
+- Complies with SR-3 (Supply Chain Controls and Processes)
+
+## Supply Chain Security Examples
+
+### Non-Compliant: Insecure Supply Chain
+
+```yaml
+# No image verification
+# No admission controls for image validation
+# No SBOM generation
+# Using untrusted container registries
+# No scanning for vulnerabilities
+```
+
+**Issues:**
+- No verification of container image integrity
+- No validation of container image provenance
+- No scanning for vulnerabilities
+- Violates SR-3 (Supply Chain Controls and Processes)
+- Violates SR-4 (Provenance)
+- Violates SR-11 (Component Authenticity)
+
+### Compliant: Secure Supply Chain
+
+```yaml
+# Example container image signature verification
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cosigned-policy
+  namespace: cosign-system
+data:
+  policy.yaml: |-
+    apiVersion: policy.sigstore.dev/v1beta1
+    kind: ClusterImagePolicy
+    metadata:
+      name: require-signatures
+    spec:
+      images:
+      - glob: "**/*"  # Apply to all images
+      authorities:
+      - name: official-signature
+        key:
+          secretRef:
+            name: cosign-public-key
+            namespace: cosign-system
+            key: cosign.pub
+      - name: sbom-attestation
+        attestation:
+          name: sbom
+          predicateType: https://spdx.dev/Document
+```
+
+**Benefits:**
+- Verifies container image signatures
+- Ensures software provenance
+- Requires SBOM attestations
+- Enforces validation at admission time
+- Complies with SR-3 (Supply Chain Controls and Processes)
+- Complies with SR-4 (Provenance)
+- Complies with SR-11 (Component Authenticity)
+- Complies with CM-14 (Signed Components)
+
 ## NIST Controls and Istio Implementation
 
 | NIST Control | Description | Istio Implementation |
@@ -342,10 +569,18 @@ spec:
 | IA-2 | Identification and Authentication (Organizational Users) | JWT authentication |
 | IA-3 | Device Identification and Authentication | Service identity, mTLS certificates |
 | IA-5 | Authenticator Management | Certificate rotation, JWT validation |
+| IA-8 | Identification and Authentication (Non-Organizational Users) | Ingress Gateway with JWT RequestAuthentication |
 | SC-7 | Boundary Protection | Gateway configuration, ingress/egress control |
 | SC-8 | Transmission Confidentiality and Integrity | mTLS encryption, HTTPS gateways |
+| SC-12 | Cryptographic Key Establishment and Management | Istio certificate management (istiod) |
 | SC-13 | Cryptographic Protection | TLS 1.2+, FIPS-compliant cipher suites |
+| SC-17 | Public Key Infrastructure Certificates | SPIFFE SVIDs, workload certificate management |
 | AU-2 | Audit Events | Access logging configuration |
 | AU-3 | Content of Audit Records | Detailed log format with required fields |
 | AU-12 | Audit Generation | Envoy proxy access logs |
 | SI-4 | Information System Monitoring | Prometheus, Grafana, Kiali monitoring |
+| SR-3 | Supply Chain Controls and Processes | Container image verification and signing |
+| SR-4 | Provenance | SBOM and container image provenance |
+| SR-11 | Component Authenticity | Cryptographic verification of container images |
+| CM-7 | Least Functionality | Pod Security Standards, container hardening |
+| CM-14 | Signed Components | Signed container images, secure registries |

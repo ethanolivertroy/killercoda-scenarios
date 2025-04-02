@@ -52,6 +52,24 @@ data:
     - [ ] Audit logging retained for required period
     - [ ] Regular security scanning of service mesh configuration
 
+    ## Container Security (NIST SP 800-204D)
+    
+    - [ ] Container images scanned for vulnerabilities
+    - [ ] Immutable container configurations used
+    - [ ] Pod security standards implemented
+    - [ ] Kubernetes admission controls integrated with mesh policies
+    - [ ] Container runtime security monitoring in place
+    - [ ] Secure container registry with image signing
+
+    ## Supply Chain Security (NIST SP 800-204D)
+    
+    - [ ] Verifiable builds for container images
+    - [ ] Software Bill of Materials (SBOM) generated for container images
+    - [ ] Trusted container sources with provenance validation
+    - [ ] Container image signing and verification enabled
+    - [ ] CI/CD pipeline security for mesh configuration
+    - [ ] Supply chain security integrated with mesh controls
+
     ## Compliance Documentation
     
     - [ ] Service mesh architecture documented

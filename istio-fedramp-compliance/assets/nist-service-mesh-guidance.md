@@ -28,16 +28,25 @@ NIST SP 800-53 defines the security controls required for FedRAMP compliance. Th
 - **IA-5 Authenticator Management**: Service meshes should manage system authenticators by establishing and implementing procedures.
   - *Service Mesh Implementation*: Certificate management and rotation
 
+- **IA-8 Identification and Authentication (Non-Organizational Users)**: Service meshes should identify and authenticate non-organizational users.
+  - *Service Mesh Implementation*: Istio Ingress Gateway with RequestAuthentication for JWT validation from external identity providers
+
 ### System and Communications Protection (SC)
 
 - **SC-7 Boundary Protection**: Service meshes should monitor and control communications at external boundaries and key internal boundaries.
-  - *Service Mesh Implementation*: Gateways, network policies
+  - *Service Mesh Implementation*: Istio Ingress/Egress Gateways, Gateway resources and VirtualServices
 
 - **SC-8 Transmission Confidentiality and Integrity**: Service meshes should protect the confidentiality and integrity of transmitted information.
   - *Service Mesh Implementation*: mTLS encryption
 
+- **SC-12 Cryptographic Key Establishment and Management**: Service meshes should establish and manage cryptographic keys.
+  - *Service Mesh Implementation*: Istio's certificate management (istiod) for automated generation, distribution, and rotation of keys
+
 - **SC-13 Cryptographic Protection**: Service meshes should implement FIPS-validated cryptography for protecting information.
   - *Service Mesh Implementation*: TLS 1.2+, FIPS-compliant cipher suites
+
+- **SC-17 Public Key Infrastructure Certificates**: Service meshes should issue and manage PKI certificates.
+  - *Service Mesh Implementation*: Istio's workload certificate management, SPIFFE SVIDs
 
 ### Audit and Accountability (AU)
 
@@ -49,6 +58,19 @@ NIST SP 800-53 defines the security controls required for FedRAMP compliance. Th
 
 - **AU-12 Audit Generation**: Service meshes should provide audit record generation capability.
   - *Service Mesh Implementation*: Envoy proxy logs
+
+### System and Information Integrity (SI)
+
+- **SI-4 Information System Monitoring**: Service meshes should monitor systems to detect attacks and unauthorized activities.
+  - *Service Mesh Implementation*: Istio telemetry, metrics, tracing, and logging capabilities including Prometheus, Grafana, and Kiali
+
+### Supply Chain Risk Management (SR)
+
+- **SR-3 Supply Chain Controls and Processes**: Service meshes should employ security verification processes.
+  - *Service Mesh Implementation*: Image verification, supply chain security
+
+- **SR-4 Provenance**: Service meshes should evaluate provenance of components.
+  - *Service Mesh Implementation*: Container image verification
 
 ## NIST SP 800-204: Security Strategies for Microservices
 
@@ -97,6 +119,23 @@ This publication focuses on implementing DevSecOps in environments with service 
 - Create security policy as code
 - Implement continuous monitoring and compliance checking
 
+## NIST SP 800-204D: Security Strategies for Container Runtimes and Orchestration in Microservices
+
+This recent publication focuses on container security in microservices environments.
+
+### Key Recommendations
+
+- Secure container images through vulnerability scanning
+- Implement immutable infrastructure and container runtime protection
+- Secure container orchestration platforms (e.g., Kubernetes)
+- Implement pod security policies and admission controls
+- Integrate container security with service mesh capabilities
+- Establish a secure container registry and image verification process
+- Deploy runtime security monitoring for containerized workloads
+- Implement automated security scanning in CI/CD pipelines
+- Ensure container supply chain security
+- Implement least privilege for container runtimes
+
 ## Applying NIST Guidance to Istio
 
 Istio provides capabilities that directly address NIST recommendations for service meshes:
@@ -106,5 +145,6 @@ Istio provides capabilities that directly address NIST recommendations for servi
 3. **Authorization Policies**: Istio allows fine-grained access control based on multiple attributes.
 4. **Traffic Management**: Istio enables advanced traffic management through VirtualServices and DestinationRules.
 5. **Observability**: Istio provides telemetry, logging, and monitoring for security oversight.
+6. **Container Security Integration**: Istio can be integrated with container security controls.
 
 By properly configuring these Istio features according to NIST guidance, you can create a FedRAMP-compliant service mesh implementation.

@@ -241,12 +241,109 @@ check_monitoring() {
   fi
 }
 
+# Function to check container security
+check_container_security() {
+  echo
+  echo "## 6. CONTAINER SECURITY AUDIT (SR-3, SR-4, CM-7)"
+  
+  # Check for Pod Security Standards
+  echo "Checking for Pod Security Standards enforcement..."
+  PSS=$(kubectl get ns -L pod-security.kubernetes.io/enforce)
+  
+  if [[ "$PSS" == *"pod-security.kubernetes.io/enforce"* ]]; then
+    echo "✅ Pod Security Standards labels found on namespaces"
+    echo "$PSS"
+  else
+    echo "❌ No Pod Security Standards enforcement found"
+  fi
+  
+  # Check for admission controllers
+  echo
+  echo "Checking for admission controllers..."
+  ADMISSION=$(kubectl get validatingwebhookconfigurations,mutatingwebhookconfigurations -o name)
+  
+  if [ -z "$ADMISSION" ]; then
+    echo "❌ No admission webhook configurations found"
+  else
+    echo "✅ Admission webhook configurations found:"
+    echo "$ADMISSION"
+  fi
+  
+  # Check for image pull policy
+  echo
+  echo "Checking for secure image pull policies..."
+  ALWAYS_PULL=$(kubectl get pods --all-namespaces -o jsonpath='{range .items[*]}{range .spec.containers[*]}{.imagePullPolicy}{"\n"}{end}{end}' | grep -c "Always")
+  TOTAL_CONTAINERS=$(kubectl get pods --all-namespaces -o jsonpath='{range .items[*]}{range .spec.containers[*]}{.name}{"\n"}{end}{end}' | wc -l)
+  
+  echo "Containers with 'Always' pull policy: $ALWAYS_PULL out of $TOTAL_CONTAINERS"
+  if [ "$ALWAYS_PULL" -lt "$TOTAL_CONTAINERS" ]; then
+    echo "❌ Not all containers use 'Always' image pull policy"
+  else
+    echo "✅ All containers use 'Always' image pull policy"
+  fi
+  
+  # Check for resource limits
+  echo
+  echo "Checking for resource limits..."
+  MISSING_LIMITS=$(kubectl get pods --all-namespaces -o jsonpath='{range .items[*]}{range .spec.containers[*]}{.name}{"\t"}{.resources.limits}{"\n"}{end}{end}' | grep -c "map\[\]")
+  
+  if [ "$MISSING_LIMITS" -gt 0 ]; then
+    echo "❌ $MISSING_LIMITS containers are missing resource limits"
+  else
+    echo "✅ All containers have resource limits defined"
+  fi
+}
+
+# Function to check supply chain security
+check_supply_chain() {
+  echo
+  echo "## 7. SUPPLY CHAIN SECURITY AUDIT (SR-3, SR-4, SR-11)"
+  
+  # Check for image signature verification
+  echo "Checking for image signature verification..."
+  # This is a simplified check; in a real environment, you'd integrate with tools like Cosign, Notary, etc.
+  COSIGN=$(which cosign 2>/dev/null)
+  
+  if [ -z "$COSIGN" ]; then
+    echo "❌ No image signing tools (cosign) found"
+  else
+    echo "✅ Image signing tool found: $COSIGN"
+  fi
+  
+  # Check for trusted registries
+  echo
+  echo "Checking for container images from trusted registries..."
+  CONTAINER_IMAGES=$(kubectl get pods --all-namespaces -o jsonpath='{range .items[*]}{range .spec.containers[*]}{.image}{"\n"}{end}{end}' | sort | uniq)
+  
+  echo "Container images in use:"
+  echo "$CONTAINER_IMAGES"
+  
+  # Check for OCI compliance
+  echo
+  echo "Checking for OCI-compliant container images..."
+  # This is a placeholder. In a real environment, you'd integrate with a scanner.
+  echo "❓ Manual verification required for OCI compliance"
+  
+  # Check for SBOMs
+  echo
+  echo "Checking for Software Bill of Materials (SBOM)..."
+  SYFT=$(which syft 2>/dev/null)
+  
+  if [ -z "$SYFT" ]; then
+    echo "❌ No SBOM generation tools (syft) found"
+  else
+    echo "✅ SBOM tool found: $SYFT"
+  fi
+}
+
 # Run all checks
 check_mtls
 check_authorization
 check_network
 check_authentication
 check_monitoring
+check_container_security
+check_supply_chain
 
 # Print compliance summary
 echo
@@ -257,6 +354,8 @@ echo "2. Authorization (AC-3, AC-6): $(if [ ! -z "$DEFAULT_DENY" ]; then echo "�
 echo "3. Network Security (SC-7, AC-4): $(if [ ! -z "$GATEWAYS" ]; then echo "✅"; else echo "❌"; fi)"
 echo "4. Authentication (IA-2, IA-3, IA-5): $(if [ ! -z "$REQUEST_AUTH" ]; then echo "✅"; else echo "❌"; fi)"
 echo "5. Monitoring (AU-2, AU-12, SI-4): $(if [ ! -z "$PROMETHEUS" ]; then echo "✅"; else echo "❌"; fi)"
+echo "6. Container Security (SR-3, CM-7): $(if [[ "$PSS" == *"pod-security.kubernetes.io/enforce"* ]]; then echo "✅"; else echo "❌"; fi)"
+echo "7. Supply Chain (SR-3, SR-4): ❓ (requires manual verification)"
 echo "=================================================="
 echo
 echo "FedRAMP Compliance Recommendations:"
@@ -265,4 +364,7 @@ echo "2. Implement default deny authorization policies in all namespaces"
 echo "3. Apply fine-grained access controls based on service identity"
 echo "4. Implement JWT authentication for external API access"
 echo "5. Enable comprehensive monitoring and logging"
+echo "6. Enforce Pod Security Standards for all namespaces"
+echo "7. Implement container image verification and signing"
+echo "8. Generate and maintain Software Bill of Materials (SBOM)"
 echo "=================================================="

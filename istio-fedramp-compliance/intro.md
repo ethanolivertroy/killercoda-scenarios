@@ -71,6 +71,7 @@ This workshop is based on the following NIST publications:
 - NIST SP 800-204A: Building Secure Microservices-based Applications
 - NIST SP 800-204B: Attribute-based Access Control for Microservices
 - NIST SP 800-204C: Implementation of DevSecOps for Microservices
+- NIST SP 800-204D: Security Strategies for Container Runtimes and Orchestration in Microservices
 
 You can review a summary of this guidance at any time:
 

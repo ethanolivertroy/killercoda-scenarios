@@ -151,9 +151,9 @@ echo "Istio Service Mesh FedRAMP Compliance Audit"
 echo "Based on NIST SP 800-53 and NIST SP 800-204 Series"
 echo "=================================================="
 
-# Check for mTLS configuration (SC-8, SC-13)
+# Check for mTLS configuration (SC-8, SC-12, SC-13, SC-17)
 echo
-echo "## 1. Transport Encryption Audit (SC-8, SC-13)"
+echo "## 1. Transport Encryption Audit (SC-8, SC-12, SC-13, SC-17)"
 echo "Checking global mTLS policy..."
 kubectl get peerauthentication -A
 
@@ -185,9 +185,9 @@ echo
 echo "Checking for default deny policies..."
 kubectl get authorizationpolicy -A -o yaml | grep -E "action: DENY|{}" | wc -l
 
-# Check for JWT authentication (IA-2, IA-5)
+# Check for JWT authentication (IA-2, IA-5, IA-8)
 echo
-echo "## 4. Authentication Controls Audit (IA-2, IA-5)"
+echo "## 4. Authentication Controls Audit (IA-2, IA-5, IA-8)"
 echo "Checking for JWT authentication..."
 kubectl get requestauthentication -A
 
@@ -267,6 +267,21 @@ This report documents the security controls implemented in our Istio service mes
 | AU-3 | Content of Audit Records | Implemented using detailed Istio telemetry |
 | AU-12 | Audit Generation | Implemented using Istio proxies that generate audit records |
 
+### Supply Chain Risk Management (SR)
+
+| Control ID | Control Name | Implementation |
+|------------|--------------|----------------|
+| SR-3 | Supply Chain Controls and Processes | Implemented using container image verification and signing |
+| SR-4 | Provenance | Implemented using SBOM and verified container sources |
+| SR-11 | Component Authenticity | Implemented using cryptographic verification of container images |
+
+### Configuration Management (CM)
+
+| Control ID | Control Name | Implementation |
+|------------|--------------|----------------|
+| CM-7 | Least Functionality | Implemented using Pod Security Standards and container runtime protection |
+| CM-14 | Signed Components | Implemented using signed container images and secure registries |
+
 ## Evidence of Compliance
 
 1. **mTLS Configuration**: PeerAuthentication resources enforcing STRICT mode
@@ -274,15 +289,21 @@ This report documents the security controls implemented in our Istio service mes
 3. **JWT Authentication**: RequestAuthentication and AuthorizationPolicy enforcement
 4. **Network Controls**: Gateway and VirtualService configurations
 5. **Monitoring**: Prometheus, Grafana, and Kiali implementations
+6. **Container Security**: Pod Security Standards enforcement
+7. **Supply Chain Security**: Image signing and verification readiness
 
 ## Conclusion
 
-The Istio service mesh implementation described in this report satisfies all relevant NIST SP 800-53 controls required for FedRAMP Moderate compliance as they apply to service mesh technologies.
+The Istio service mesh implementation described in this report satisfies all relevant NIST SP 800-53 controls required for FedRAMP Moderate compliance as they apply to service mesh technologies, including the latest container security and supply chain security controls per NIST SP 800-204D.
 
 ## References
 
-- NIST SP 800-53 Rev. 5
-- NIST SP 800-204 Series (Microservices Security)
+- NIST SP 800-53 Rev. 5: Security and Privacy Controls
+- NIST SP 800-204: Security Strategies for Microservices
+- NIST SP 800-204A: Building Secure Microservices-based Applications
+- NIST SP 800-204B: Attribute-based Access Control for Microservices
+- NIST SP 800-204C: Implementation of DevSecOps for Microservices
+- NIST SP 800-204D: Security Strategies for Container Runtimes and Orchestration in Microservices
 - Istio Security Best Practices
 EOF
 
@@ -301,4 +322,39 @@ Our implementation satisfies these requirements through:
 - Multiple security layers (mTLS, JWT, service identity)
 - Integrated monitoring with Prometheus, Grafana, and Kiali
 
-You've now completed the implementation and audit of a FedRAMP-compliant Istio service mesh!
+## Container and Supply Chain Security
+
+The latest NIST SP 800-204D publication emphasizes container security in microservices environments. When implementing Istio in a FedRAMP environment, you should also consider these critical security controls:
+
+### Container Security Controls (SR-3, SR-4, CM-7)
+
+```bash
+# Add Pod Security Standards enforcement to the secure-apps namespace
+kubectl label namespace secure-apps pod-security.kubernetes.io/enforce=restricted
+
+# Verify the label
+kubectl get namespace secure-apps --show-labels
+```{{exec}}
+
+### Supply Chain Security Recommendations
+
+For a fully compliant FedRAMP implementation, consider these additional security measures:
+
+1. **Container Image Scanning**: Scan all container images for vulnerabilities before deployment
+2. **Image Signing**: Implement digital signatures for container images using tools like Cosign
+3. **Software Bill of Materials (SBOM)**: Generate and maintain SBOMs for all container images
+4. **Immutable Infrastructure**: Use immutable container configurations
+5. **Secure Registries**: Source containers only from approved, secure registries
+6. **Resource Limits**: Enforce CPU and memory limits for all containers
+
+## Extended Security Audit
+
+Run our comprehensive security audit script that checks for NIST SP 800-204D compliance:
+
+```bash
+/root/istio-fedramp-audit.sh
+```{{exec}}
+
+This audit incorporates the latest NIST guidance, including container and supply chain security controls.
+
+You've now completed the implementation and audit of a FedRAMP-compliant Istio service mesh that incorporates the latest NIST guidance!
