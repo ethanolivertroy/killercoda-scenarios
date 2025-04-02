@@ -12,8 +12,9 @@ if kubectl get namespace secure-apps &>/dev/null && kubectl get namespace secure
     if kubectl get configmap backend-content -n secure-apps &>/dev/null; then
       
       # Check that the server and authorization policy exists
-      if kubectl get server backend-server -n secure-apps &>/dev/null && \
-         kubectl get serverauthorization backend-server-auth -n secure-apps &>/dev/null; then
+      # Use multiple API versions to be more flexible
+      if (kubectl get server.policy.linkerd.io backend-server -n secure-apps &>/dev/null || kubectl get server backend-server -n secure-apps &>/dev/null) && \
+         (kubectl get serverauthorization.policy.linkerd.io backend-server-auth -n secure-apps &>/dev/null || kubectl get serverauthorization backend-server-auth -n secure-apps &>/dev/null); then
         
         # Check that the HTTP route exists using different methods
         if kubectl get httproute.policy.linkerd.io backend-route -n secure-apps &>/dev/null || kubectl get httproute backend-route -n secure-apps &>/dev/null; then

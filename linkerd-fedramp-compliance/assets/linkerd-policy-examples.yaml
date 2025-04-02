@@ -1,0 +1,68 @@
+# Examples of Linkerd policy resources with correct API versions
+
+# Server resource - defines a server receiving traffic
+apiVersion: policy.linkerd.io/v1beta3
+kind: Server
+metadata:
+  name: backend-server
+  namespace: secure-apps
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  port: 80
+  proxyProtocol: HTTP/1
+---
+# ServerAuthorization resource - controls who can access the server
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  name: backend-server-auth
+  namespace: secure-apps
+spec:
+  server: backend-server
+  client:
+    # Only allow the frontend service to access the backend service
+    unauthenticated: false
+    meshTLS:
+      serviceAccounts:
+        - name: frontend
+          namespace: secure-apps
+---
+# HTTPRoute resource - controls HTTP-level access
+apiVersion: policy.linkerd.io/v1beta3
+kind: HTTPRoute
+metadata:
+  name: backend-route
+  namespace: secure-apps
+spec:
+  parentRefs:
+  - name: backend-server
+    kind: Server
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+---
+# Example of a more restrictive HTTPRoute allowing only specific methods
+apiVersion: policy.linkerd.io/v1beta3
+kind: HTTPRoute
+metadata:
+  name: backend-route-with-methods
+  namespace: secure-apps
+spec:
+  parentRefs:
+  - name: backend-server
+    kind: Server
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+      method: GET
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api
+      method: POST
