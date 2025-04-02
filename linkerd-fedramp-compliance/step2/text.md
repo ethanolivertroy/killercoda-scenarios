@@ -119,7 +119,38 @@ spec:
 EOF
 ```{{exec}}
 
-### Task 1c: Wait for Linkerd Injection and Pod Readiness
+### Task 1c: Create ConfigMap for Backend Content
+
+Let's create a ConfigMap with some HTML content for our backend service to serve. This is important for testing HTTP-based policies and ensuring our backend returns proper responses:
+
+```bash
+# Create a ConfigMap with content for the backend service
+cat << EOF | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-content
+  namespace: secure-apps
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head><title>Backend Service</title></head>
+    <body>
+      <h1>Hello from Backend Service</h1>
+      <p>This is a test page from the backend service.</p>
+    </body>
+    </html>
+EOF
+
+# Update the backend deployment to use the ConfigMap
+kubectl patch deployment backend -n secure-apps --type=json -p='[
+  {"op": "add", "path": "/spec/template/spec/containers/0/volumeMounts", "value": [{"name": "content", "mountPath": "/usr/share/nginx/html"}]},
+  {"op": "add", "path": "/spec/template/spec/volumes", "value": [{"name": "content", "configMap": {"name": "backend-content"}}]}
+]'
+```{{exec}}
+
+### Task 1d: Wait for Linkerd Injection and Pod Readiness
 
 Now we need to wait for Linkerd to inject its proxies and for the pods to become ready:
 
@@ -292,7 +323,7 @@ kubectl exec -it test-pod -n secure-apps -c test-pod -- curl -s http://backend.s
 
 ### Task 3f: Test Authorized Access
 
-Now let's verify that the frontend pod (which is authorized) can access the backend service:
+Now let's verify that the frontend pod (which is authorized) can access the backend service. The frontend should be able to access the backend and receive the HTML content we configured:
 
 ```bash
 # Install curl in the frontend pod
@@ -332,7 +363,7 @@ kubectl get pod $FRONTEND_POD -n secure-apps -o yaml | grep linkerd
 
 ### Task 4c: Verify mTLS Connections
 
-Let's check the mTLS status for all connections in our namespace:
+Let's check the mTLS status for all connections in our namespace. When we run the curl command with verbose output, we should see a successful connection and the HTML content from our ConfigMap:
 
 ```bash
 # View the mTLS status for connections in the secure-apps namespace
@@ -399,7 +430,7 @@ fi
 
 ### Task 5b: Test GET Request
 
-Let's test the HTTP route policy with a GET request:
+Let's test the HTTP route policy with a GET request. With our ConfigMap properly mounted, the backend should now serve the HTML content we defined:
 
 ```bash
 # Test the route policy with GET
