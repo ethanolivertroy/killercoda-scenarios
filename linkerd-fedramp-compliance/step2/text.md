@@ -121,7 +121,7 @@ EOF
 
 ### Task 1c: Create ConfigMap for Backend Content
 
-Let's create a ConfigMap with some HTML content for our backend service to serve and restart the deployment to apply the changes. This is crucial - without content in the nginx container, requests will receive empty responses or 403 errors even when authorization policies are correctly configured:
+Let's create a ConfigMap with some HTML content for our backend service to serve and restart the deployment to apply the changes:
 
 ```bash
 # Create a ConfigMap with content for the backend service
@@ -161,7 +161,7 @@ kubectl rollout status deployment backend -n secure-apps
 Now we need to wait for Linkerd to inject its proxies and for the pods to become ready:
 
 ```bash
-# Check initial pod status - may show no resources initially, which is normal
+# Check initial pod status
 echo "Checking initial pod status..."
 kubectl get pods -n secure-apps
 
@@ -205,37 +205,25 @@ This verification confirms that Linkerd has established mTLS between our service
 
 ### Task 3a: Verify Policy API Support
 
-Let's first verify what policy-related capabilities are available in our Linkerd installation by checking the policy custom resource definitions:
+Let's check what policy-related capabilities are available in our Linkerd installation:
 
 ```bash
 # Check for policy-related CRDs
 kubectl get crds | grep linkerd.io
 
-# Alternative verification via API resources
+# Check API resources
 kubectl api-resources | grep linkerd.io
 
-# List the Linkerd components that are installed
-kubectl get deploy -n linkerd
-```{{exec}}
-
-### Task 3b: Prepare for Policy Implementation
-
-Let's prepare for implementing authorization policies by checking which resources we can create:
-
-```bash
-# Check which API versions and groups are available for authorization policies
-kubectl api-resources | grep -i auth
-
-# Check Linkerd version for reference
+# Check the Linkerd version
 linkerd version
 ```{{exec}}
 
-### Task 3c: Create Authorization Policies
+### Task 3b: Create Server and Authorization Policy
 
-Now let's create a server authorization policy to restrict access to the backend service:
+Now let's create a Server resource and ServerAuthorization policy to restrict access to the backend service:
 
 ```bash
-# Create Server and ServerAuthorization resources with the correct API versions
+# Create Server and ServerAuthorization resources
 cat << EOF | kubectl apply -f -
 apiVersion: policy.linkerd.io/v1beta3
 kind: Server
@@ -265,7 +253,7 @@ spec:
 EOF
 ```{{exec}}
 
-### Task 3d: Prepare Test Pod for Access Testing
+### Task 3c: Create Test Pod for Access Testing
 
 Let's create a test pod to verify that unauthorized access is denied:
 
@@ -286,131 +274,63 @@ kubectl wait --for=condition=ready pod/test-pod -n secure-apps --timeout=60s
 kubectl exec -it test-pod -n secure-apps -c test-pod -- apk add --no-cache curl
 ```{{exec}}
 
-### Task 3e: Test Unauthorized Access
+### Task 3d: Test Unauthorized Access
 
 Let's verify that unauthorized pods cannot access the backend service:
 
 ```bash
-# Try to access the backend service from the test pod (should be denied)
+# Try to access the backend service from the test pod
+# This should fail because test-pod is not authorized
 kubectl exec -it test-pod -n secure-apps -c test-pod -- curl -s http://backend.secure-apps.svc.cluster.local --max-time 5 || echo "Access denied as expected"
 ```{{exec}}
 
-### Task 3f: Test Authorized Access
+### Task 3e: Test Authorized Access
 
-Now let's verify that the frontend pod (which is authorized) can access the backend service. The frontend should be able to access the backend and receive the HTML content we configured:
+Now let's verify that the frontend pod (which is authorized) can access the backend service:
 
 ```bash
-# Install curl in the frontend pod
+# Get frontend pod name
 FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
+
+# Install curl in the frontend pod
 kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- apk add --no-cache curl
 
 # Try to access the backend service from the frontend pod (should be allowed)
 kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend.secure-apps.svc.cluster.local
-
-# If the above command fails with "curl: not found", run the following commands:
-# kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- apk update
-# kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- apk add curl
-# kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend.secure-apps.svc.cluster.local
 ```{{exec}}
 
-## Task 4: Verify mTLS and Certificate Configuration
+## Task 4: Validate FedRAMP Security Requirements
 
-### Task 4a: Check Proxy Metrics
+### Task 4a: Verify mTLS Connection Details
 
-Let's examine Linkerd's mTLS metrics, which are essential for FedRAMP's cryptographic requirements:
-
-```bash
-# Check the Linkerd proxy metrics to verify mTLS is working
-linkerd viz stat -n secure-apps deployment/frontend
-```{{exec}}
-
-### Task 4b: Inspect Proxy Configuration
-
-Let's inspect the proxy version and configuration:
-
-```bash
-# View information about the proxy injection
-FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
-kubectl get pod $FRONTEND_POD -n secure-apps -o yaml | grep -A5 linkerd.io/proxy-version
-
-# Check the pod annotations to verify proxy injection
-kubectl get pod $FRONTEND_POD -n secure-apps -o yaml | grep -A5 annotations
-
-# List all available Linkerd-related annotations
-kubectl get pod $FRONTEND_POD -n secure-apps -o yaml | grep linkerd
-```{{exec}}
-
-### Task 4c: Verify mTLS Connections
-
-Let's check the mTLS status for all connections in our namespace. When we run the curl command with verbose output, we should see a successful connection and the HTML content from our ConfigMap:
+Let's examine the mTLS connections in more detail to validate FedRAMP requirements:
 
 ```bash
 # View the mTLS status for connections in the secure-apps namespace
-linkerd viz edges deployment -n secure-apps || echo "Command failed but we can continue with the tutorial"
+linkerd viz edges deployment -n secure-apps
 
-# Try a direct invocation to verify the connection
+# Try a direct invocation with verbose output to see mTLS details
 kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -sv http://backend.secure-apps.svc.cluster.local
 ```{{exec}}
 
-## Task 5: Implement and Test HTTP Route Policies
+### Task 4b: Review Certificate Configuration
 
-### Task 5a: Create HTTP Route Policy
-
-Let's implement an HTTP route policy to further demonstrate Linkerd's security capabilities:
+Let's examine the certificate configuration for FedRAMP validation:
 
 ```bash
-# Create HTTPRoute with the correct API version
-cat << EOF | kubectl apply -f -
-apiVersion: policy.linkerd.io/v1beta3
-kind: HTTPRoute
-metadata:
-  name: backend-route
-  namespace: secure-apps
-spec:
-  parentRefs:
-  - name: backend-server
-    kind: Server
-  rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /
-EOF
+# Check proxy metrics and certificates
+linkerd viz stat -n secure-apps deployment/frontend
+
+# View information about the proxy identity and configuration
+kubectl get pod $FRONTEND_POD -n secure-apps -o yaml | grep -A5 linkerd.io/proxy-version
+
+# Check linkerd identity settings
+kubectl get pod $FRONTEND_POD -n secure-apps -o yaml | grep linkerd | grep identity
 ```{{exec}}
 
-### Task 5b: Test GET Request
+## Task 5: Document FedRAMP Controls
 
-Let's test the HTTP route policy with a GET request. With our ConfigMap properly mounted, the backend should now serve the HTML content we defined:
-
-```bash
-# Test the route policy with GET
-kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend.secure-apps.svc.cluster.local
-```{{exec}}
-
-### Task 5c: Test POST Request
-
-Now let's try a POST request:
-
-```bash
-# Send a POST request
-kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s -X POST http://backend.secure-apps.svc.cluster.local
-
-# Test with verbose output to diagnose any issues
-kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -v -X POST http://backend.secure-apps.svc.cluster.local
-```{{exec}}
-
-### Task 5d: Test with Unauthorized Method
-
-Let's test a method that is not explicitly allowed in our route policy:
-
-```bash
-# Send a PUT request (should be rejected since it's not in our allowed methods)
-kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s -X PUT http://backend.secure-apps.svc.cluster.local || echo "PUT request denied as expected"
-```{{exec}}
-
-## FedRAMP Compliance Check
-
-Let's review how our Linkerd implementation addresses key FedRAMP requirements from NIST SP 800-53 Rev 5, distinguishing between direct and supporting capabilities:
+Here's how our Linkerd implementation addresses key FedRAMP requirements from NIST SP 800-53 Rev 5:
 
 ### Primary Security Controls Directly Implemented
 
@@ -421,7 +341,7 @@ Let's review how our Linkerd implementation addresses key FedRAMP requirements f
 
 #### Access Management
 - **AC-3**: Our server authorization policies successfully restricted access based on identity
-- **AC-4**: HTTP route policies effectively controlled information flow between services
+- **AC-4**: We've implemented information flow control between services
 
 #### Service Identity
 - **IA-2**: Each service received a cryptographically verifiable SPIFFE identity
@@ -448,8 +368,7 @@ Our demonstration has validated the following security aspects:
 1. **Policy Enforcement**: We confirmed that unauthorized pods cannot access protected services
 2. **Identity Verification**: Services establish secure connections using unique identities
 3. **Communication Security**: All traffic between services is encrypted via mTLS
-4. **Fine-grained Control**: We implemented and tested path-based access controls
-5. **Observability**: Metrics capture security-relevant events for auditing
+4. **Observability**: Metrics capture security-relevant events for auditing
 
 To complete a comprehensive FedRAMP implementation, you would need to integrate Linkerd with:
 - External logging and SIEM systems

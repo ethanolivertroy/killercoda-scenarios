@@ -16,22 +16,15 @@ if kubectl get namespace secure-apps &>/dev/null && kubectl get namespace secure
       if (kubectl get server.policy.linkerd.io backend-server -n secure-apps &>/dev/null || kubectl get server backend-server -n secure-apps &>/dev/null) && \
          (kubectl get serverauthorization.policy.linkerd.io backend-server-auth -n secure-apps &>/dev/null || kubectl get serverauthorization backend-server-auth -n secure-apps &>/dev/null); then
         
-        # Check that the HTTP route exists using different methods
-        if kubectl get httproute.policy.linkerd.io backend-route -n secure-apps &>/dev/null || kubectl get httproute backend-route -n secure-apps &>/dev/null; then
-          
-          # Get frontend pod name
-          FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
-          
-          # Try to access the backend service from the frontend pod - should return content
-          if kubectl exec $FRONTEND_POD -n secure-apps -c nginx -- curl -s -o /dev/null -w "%{http_code}" http://backend.secure-apps.svc.cluster.local | grep -q "200"; then
-            echo "Great! You've successfully implemented and tested mTLS and security policies in your Linkerd mesh."
-            exit 0
-          else
-            echo "The backend service is not responding correctly. Make sure the ConfigMap is mounted properly."
-            exit 1
-          fi
+        # Get frontend pod name
+        FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
+        
+        # Try to access the backend service from the frontend pod - should return content
+        if kubectl exec $FRONTEND_POD -n secure-apps -c nginx -- curl -s -o /dev/null -w "%{http_code}" http://backend.secure-apps.svc.cluster.local | grep -q "200"; then
+          echo "Great! You've successfully implemented and tested mTLS and security policies in your Linkerd mesh."
+          exit 0
         else
-          echo "HTTP route is missing. Please create the HTTP route for the backend service."
+          echo "The backend service is not responding correctly. Make sure the ConfigMap is mounted properly."
           exit 1
         fi
       else
