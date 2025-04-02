@@ -47,10 +47,16 @@ Organizations adopt Istio for several key benefits:
 Istio is particularly valuable for FedRAMP compliance because it addresses many NIST 800-53 controls right out of the box, including:
 
 - **SC-8**: Transmission Confidentiality and Integrity (via mTLS)
+- **SC-12**: Cryptographic Key Establishment and Management (via certificate management)
+- **SC-17**: Public Key Infrastructure Certificates (via workload identity)
 - **AC-3**: Access Enforcement (via authorization policies)
 - **AC-4**: Information Flow Control (via network policies)
+- **AC-6**: Least Privilege (via granular authorization rules)
 - **IA-2/IA-3**: Identification and Authentication (via service identity)
+- **IA-5**: Authenticator Management (via certificate rotation)
+- **IA-8**: Identification and Authentication (Non-Organizational Users) (via JWT validation)
 - **AU-2/AU-3**: Audit and Accountability (via access logging)
+- **SI-4**: Information System Monitoring (via telemetry and observability)
 
 In this scenario, you'll learn how to implement and assess security controls in Istio service meshes to meet FedRAMP requirements based on NIST 800-53 controls and NIST 800-204 series guidance for microservices.
 
