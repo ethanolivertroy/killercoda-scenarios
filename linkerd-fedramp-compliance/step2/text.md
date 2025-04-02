@@ -426,6 +426,12 @@ spec:
     - path:
         type: PathPrefix
         value: /
+      method: GET
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+      method: POST
 EOF
     
     if [ $? -eq 0 ]; then
@@ -453,8 +459,20 @@ kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend
 Now let's try a POST request to verify different HTTP methods:
 
 ```bash
-# Send a POST request (this should still work with our basic route)
-kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s -X POST http://backend.secure-apps.svc.cluster.local || echo "POST request failed"
+# Send a POST request (should work since we explicitly defined it in the route)
+kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s -X POST http://backend.secure-apps.svc.cluster.local
+
+# Test with verbose output to diagnose any issues
+kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -v -X POST http://backend.secure-apps.svc.cluster.local
+```{{exec}}
+
+### Task 5d: Test with Unauthorized Method
+
+Let's test a method that is not explicitly allowed in our route policy:
+
+```bash
+# Send a PUT request (should be rejected since it's not in our allowed methods)
+kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s -X PUT http://backend.secure-apps.svc.cluster.local || echo "PUT request denied as expected"
 ```{{exec}}
 
 ## FedRAMP Compliance Check
