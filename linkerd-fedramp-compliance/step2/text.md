@@ -121,7 +121,7 @@ EOF
 
 ### Task 1c: Create ConfigMap for Backend Content
 
-Let's create a ConfigMap with some HTML content for our backend service to serve. This is important for testing HTTP-based policies and ensuring our backend returns proper responses:
+Let's create a ConfigMap with some HTML content for our backend service to serve and restart the deployment to apply the changes. This is crucial - without content in the nginx container, requests will receive empty responses or 403 errors even when authorization policies are correctly configured:
 
 ```bash
 # Create a ConfigMap with content for the backend service
@@ -148,6 +148,12 @@ kubectl patch deployment backend -n secure-apps --type=json -p='[
   {"op": "add", "path": "/spec/template/spec/containers/0/volumeMounts", "value": [{"name": "content", "mountPath": "/usr/share/nginx/html"}]},
   {"op": "add", "path": "/spec/template/spec/volumes", "value": [{"name": "content", "configMap": {"name": "backend-content"}}]}
 ]'
+
+# Restart the deployment to apply changes
+kubectl rollout restart deployment backend -n secure-apps
+
+# Wait for the deployment to finish restarting
+kubectl rollout status deployment backend -n secure-apps
 ```{{exec}}
 
 ### Task 1d: Wait for Linkerd Injection and Pod Readiness
@@ -332,6 +338,11 @@ kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- apk add --no-cache cur
 
 # Try to access the backend service from the frontend pod (should be allowed)
 kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend.secure-apps.svc.cluster.local
+
+# If the above command fails with "curl: not found", run the following commands:
+# kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- apk update
+# kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- apk add curl
+# kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend.secure-apps.svc.cluster.local
 ```{{exec}}
 
 ## Task 4: Verify mTLS and Certificate Configuration
