@@ -13,6 +13,8 @@ FedRAMP requires strong authorization controls (AC-3, AC-4, AC-6):
 
 ## Task 1: Implement Service-to-Service Authorization Policies
 
+### 1.1 Create Fine-Grained Authorization Policies
+
 Let's implement authorization policies based on service identity, which aligns with NIST SP 800-204B's recommendation for ABAC:
 
 ```bash
@@ -54,7 +56,9 @@ This implements the principle of least privilege (AC-6) by:
 
 ## Task 2: Verify Authorization Policies
 
-Let's test our authorization policies:
+### 2.1 Test Allowed and Denied Operations
+
+Let's test our authorization policies to ensure they enforce least privilege:
 
 ```bash
 # Get the frontend pod name
@@ -68,6 +72,8 @@ kubectl exec -n secure-apps $FRONTEND_POD -- curl -s -X POST http://backend:80/h
 ```{{exec}}
 
 ## Task 3: Implement Network Security Controls
+
+### 3.1 Configure Gateway and Routing
 
 FedRAMP requires boundary protection (SC-7). In a service mesh, we can implement this using Istio's network security features:
 
@@ -108,7 +114,15 @@ spec:
         host: frontend
         port:
           number: 80
----
+EOF
+```{{exec}}
+
+### 3.2 Define TLS Requirements for Services
+
+Now, let's define DestinationRules to enforce mTLS for all traffic:
+
+```bash
+cat << EOF | kubectl apply -f -
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
@@ -140,7 +154,9 @@ This sets up:
 
 ## Task 4: Perform a FedRAMP Security Audit
 
-Now, let's create an audit script to check our service mesh for FedRAMP compliance:
+### 4.1 Create Security Audit Script
+
+Now, let's create a comprehensive audit script to check our service mesh for FedRAMP compliance:
 
 ```bash
 cat << EOF > /root/istio-fedramp-audit.sh
@@ -215,6 +231,8 @@ EOF
 chmod +x /root/istio-fedramp-audit.sh
 ```{{exec}}
 
+### 4.2 Run the Security Audit
+
 Let's run the audit script to check our service mesh configuration:
 
 ```bash
@@ -223,7 +241,9 @@ Let's run the audit script to check our service mesh configuration:
 
 ## Task 5: Generate FedRAMP Documentation
 
-Let's create a FedRAMP compliance report for our service mesh:
+### 5.1 Create Compliance Report
+
+Let's create a FedRAMP compliance report for our service mesh that documents all implemented security controls:
 
 ```bash
 cat << EOF > /root/istio-fedramp-report.md
@@ -310,6 +330,14 @@ EOF
 echo "Report generated: /root/istio-fedramp-report.md"
 ```{{exec}}
 
+### 5.2 Review Generated Report
+
+Let's view the generated compliance report:
+
+```bash
+cat /root/istio-fedramp-report.md | head -n 20
+```{{exec}}
+
 ## NIST Compliance Check
 
 According to NIST SP 800-204B, secure microservices should implement:
@@ -322,11 +350,11 @@ Our implementation satisfies these requirements through:
 - Multiple security layers (mTLS, JWT, service identity)
 - Integrated monitoring with Prometheus, Grafana, and Kiali
 
-## Container and Supply Chain Security
+## Task 6: Implement Container and Supply Chain Security
 
 The latest NIST SP 800-204D publication emphasizes container security in microservices environments. When implementing Istio in a FedRAMP environment, you should also consider these critical security controls:
 
-### Container Security Controls (SR-3, SR-4, CM-7)
+### 6.1 Apply Container Security Controls (SR-3, SR-4, CM-7)
 
 ```bash
 # Add Pod Security Standards enforcement to the secure-apps namespace
@@ -336,7 +364,7 @@ kubectl label namespace secure-apps pod-security.kubernetes.io/enforce=restricte
 kubectl get namespace secure-apps --show-labels
 ```{{exec}}
 
-### Supply Chain Security Recommendations
+### 6.2 Supply Chain Security Recommendations
 
 For a fully compliant FedRAMP implementation, consider these additional security measures:
 
@@ -347,7 +375,9 @@ For a fully compliant FedRAMP implementation, consider these additional security
 5. **Secure Registries**: Source containers only from approved, secure registries
 6. **Resource Limits**: Enforce CPU and memory limits for all containers
 
-## Extended Security Audit
+## Task 7: Run Extended Security Audit
+
+### 7.1 Execute Comprehensive Compliance Audit
 
 Run our comprehensive security audit script that checks for NIST SP 800-204D compliance:
 

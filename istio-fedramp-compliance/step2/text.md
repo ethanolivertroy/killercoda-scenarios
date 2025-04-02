@@ -15,7 +15,9 @@ FedRAMP requires strong authentication controls (IA-2, IA-3, IA-5, IA-8):
 
 ## Task 1: Deploy Sample Microservices
 
-Let's deploy a set of sample microservices to demonstrate authentication controls:
+### 1.1 Create Service Accounts and Deployments
+
+Let's deploy a set of sample microservices with distinct service accounts to demonstrate authentication controls:
 
 ```bash
 cat << EOF | kubectl apply -f -
@@ -104,6 +106,8 @@ spec:
 EOF
 ```{{exec}}
 
+### 1.2 Verify Microservices Deployment
+
 Make sure the pods are running:
 
 ```bash
@@ -111,6 +115,8 @@ kubectl get pods -n secure-apps
 ```{{exec}}
 
 ## Task 2: Verify mTLS Configuration
+
+### 2.1 Check mTLS Status for Pods
 
 Let's confirm that our microservices are using mTLS as required by FedRAMP (SC-8, SC-13):
 
@@ -121,7 +127,9 @@ istioctl x describe pod -n secure-apps $(kubectl get pod -n secure-apps -l app=f
 
 You should see that mTLS is enabled between services.
 
-Let's also verify that we can't connect without proper mTLS certificates:
+### 2.2 Test mTLS Enforcement
+
+Let's verify that we can't connect without proper mTLS certificates:
 
 ```bash
 # Create a pod without istio-injection to test
@@ -136,6 +144,8 @@ kubectl exec -it test-pod -n non-secure -- curl -v backend.secure-apps.svc.clust
 This should fail since the test pod doesn't have the required mTLS certificates.
 
 ## Task 3: Configure Workload-Specific mTLS Policies
+
+### 3.1 Define Granular mTLS Policies
 
 While cluster-wide mTLS is good, FedRAMP's least privilege principle (AC-6) requires granular control. Let's create namespace and workload-specific PeerAuthentication policies:
 
@@ -167,39 +177,39 @@ spec:
 EOF
 ```{{exec}}
 
-## Task 4: Verify JWT Authentication for API Access
+## Task 4: Configure and Verify JWT Authentication
 
-FedRAMP requires multi-factor authentication for privileged access (IA-2). We've already implemented JWT authentication for API access with the RequestAuthentication resource we created earlier.
+### 4.1 Check Existing JWT Configuration
 
-Let's verify that our JWT authentication is properly configured:
+FedRAMP requires multi-factor authentication for privileged access (IA-2, IA-8). Let's first check if any JWT authentication is already configured:
 
 ```bash
 # Check if RequestAuthentication is applied
 kubectl get requestauthentication -n secure-apps
-kubectl get requestauthentication -n secure-apps -o yaml
-
-# Check if AuthorizationPolicy is applied
 kubectl get authorizationpolicy -n secure-apps
-kubectl get authorizationpolicy -n secure-apps -o yaml
 ```{{exec}}
 
 This confirms that the backend service is configured to validate JWTs issued by "testing@secure.istio.io" and enforce JWT validation through the AuthorizationPolicy.
 
-## Task 5: Test Authentication Controls
+## Task 5: Implement and Test JWT Authentication
 
-Let's test our JWT authentication policy:
+### 5.1 Test Initial Service Access
+
+Let's test our initial service-to-service authentication:
 
 ```bash
 # Get the frontend pod name
 FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath={.items..metadata.name})
 
-# Access backend without JWT (should still work within the mesh due to mTLS)
+# Access backend without JWT (should work with just mTLS)
 kubectl exec -n secure-apps $FRONTEND_POD -- curl -s http://backend:80/headers
 ```{{exec}}
 
 The request should succeed since it's coming from within the mesh with valid mTLS.
 
-Now, let's first create a RequestAuthentication resource to define how JWTs should be validated. We'll save it to a file and then apply it for better reliability:
+### 5.2 Configure JWT Authentication
+
+Now, let's create a RequestAuthentication resource to define how JWTs should be validated:
 
 ```bash
 cat << EOF > /root/request-auth.yaml
@@ -219,6 +229,8 @@ EOF
 
 kubectl apply -f /root/request-auth.yaml
 ```{{exec}}
+
+### 5.3 Define JWT Authorization Policy
 
 Next, we'll add an AuthorizationPolicy to enforce the JWT validation:
 
@@ -244,8 +256,13 @@ spec:
 EOF
 
 kubectl apply -f /root/auth-policy.yaml
+```{{exec}}
 
-# Create a default deny policy for secure-apps namespace
+### 5.4 Implement Default Deny Policy
+
+Let's create a default deny policy for our secure-apps namespace:
+
+```bash
 cat << EOF > /root/default-deny.yaml
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
@@ -262,13 +279,15 @@ kubectl apply -f /root/default-deny.yaml
 kubectl get requestauthentication,authorizationpolicy -n secure-apps
 ```{{exec}}
 
+### 5.5 Test JWT Authentication Enforcement
+
 Now try to access the backend without a JWT:
 
 ```bash
 kubectl exec -n secure-apps $FRONTEND_POD -- curl -s http://backend:80/headers
 ```{{exec}}
 
-The request should now be denied, as we're now enforcing JWT validation.
+The request should now be denied, as we're enforcing JWT validation.
 
 Let's try with a valid JWT:
 

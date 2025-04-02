@@ -14,7 +14,9 @@ Service meshes provide critical security capabilities that align with FedRAMP re
 
 ## Task 1: Install Istio with Secure Configuration
 
-First, let's download and install Istio:
+### 1.1 Download Istio
+
+First, let's download and install the Istio binary:
 
 ```bash
 curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.17.2 sh -
@@ -22,7 +24,9 @@ cd istio-1.17.2
 export PATH=$PWD/bin:$PATH
 ```{{exec}}
 
-Let's install Istio with security settings focused on FedRAMP compliance:
+### 1.2 Create FedRAMP-Compliant Configuration
+
+Let's create an Istio configuration with security settings focused on FedRAMP compliance:
 
 ```bash
 cat << EOF > ./secure-istio.yaml
@@ -78,7 +82,15 @@ EOF
 istioctl install -f secure-istio.yaml -y
 ```{{exec}}
 
-## Task 2: Verify Installation Security
+### 1.3 Install Istio with the Configuration
+
+```bash
+istioctl install -f secure-istio.yaml -y
+```{{exec}}
+
+## Task 2: Verify Installation and Create Application Namespace
+
+### 2.1 Verify Istio Components
 
 Let's verify that Istio is properly installed with our security settings:
 
@@ -86,14 +98,18 @@ Let's verify that Istio is properly installed with our security settings:
 kubectl get pods -n istio-system
 ```{{exec}}
 
-Now, let's create a default namespace with Istio injection enabled:
+### 2.2 Create Secure Application Namespace
+
+Now, let's create a dedicated namespace with automatic Istio sidecar injection enabled:
 
 ```bash
 kubectl create namespace secure-apps
 kubectl label namespace secure-apps istio-injection=enabled
 ```{{exec}}
 
-## Task 3: Configure PeerAuthentication for Strict mTLS
+## Task 3: Configure Network Security with mTLS
+
+### 3.1 Enable Strict mTLS Mesh-Wide
 
 According to NIST SP 800-204A, microservices should use mutual TLS for service-to-service authentication. Let's configure a PeerAuthentication policy to enforce strict mTLS across the cluster:
 
@@ -110,7 +126,9 @@ spec:
 EOF
 ```{{exec}}
 
-## Task 4: Configure Security Monitoring
+## Task 4: Configure Security Monitoring and Observability
+
+### 4.1 Install Monitoring Components
 
 FedRAMP requires comprehensive security monitoring (AU-2, AU-12, SI-4). Let's set up monitoring for our Istio mesh to meet these requirements:
 
@@ -119,7 +137,13 @@ FedRAMP requires comprehensive security monitoring (AU-2, AU-12, SI-4). Let's se
 curl -L https://raw.githubusercontent.com/istio/istio/release-1.17/samples/addons/prometheus.yaml -o prometheus.yaml
 curl -L https://raw.githubusercontent.com/istio/istio/release-1.17/samples/addons/grafana.yaml -o grafana.yaml
 curl -L https://raw.githubusercontent.com/istio/istio/release-1.17/samples/addons/kiali.yaml -o kiali.yaml
+```{{exec}}
 
+### 4.2 Apply Monitoring Resources
+
+Now let's deploy the monitoring components:
+
+```bash
 # Apply the monitoring components
 kubectl apply -f prometheus.yaml
 kubectl apply -f grafana.yaml
@@ -130,6 +154,8 @@ kubectl get pods -n istio-system
 ```{{exec}}
 
 ## Task 5: Verify Security Configuration
+
+### 5.1 Verify mTLS Configuration
 
 Let's verify our security configuration by checking the mTLS status:
 
@@ -143,13 +169,17 @@ istioctl analyze -n secure-apps --failure-threshold=Error
 
 This command should confirm that our Istio installation requires strict mTLS for service-to-service communication.
 
+### 5.2 Verify Namespace Configuration
+
 Let's verify that our secure-apps namespace is properly configured:
 
 ```bash
 kubectl get namespace secure-apps --show-labels
 ```{{exec}}
 
-And check that our monitoring components are deployed:
+### 5.3 Verify Monitoring Deployment
+
+Finally, let's check that our monitoring components are deployed:
 
 ```bash
 kubectl get pods -n istio-system | grep -E 'prometheus|grafana|kiali'
