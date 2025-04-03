@@ -1,198 +1,206 @@
-# Installing and Configuring a Secure Linkerd Mesh
+# Setting Up a Compliant Linkerd Service Mesh
 
-In this step, we'll install Linkerd with security-focused configurations that align with FedRAMP requirements. Linkerd's security architecture is designed with a zero-trust approach, providing strong defaults that map to several NIST 800-53 controls.
+The foundation of FedRAMP compliance in a service mesh environment starts with a properly configured Linkerd installation. NIST SP 800-204B specifically recommends service meshes for implementing security controls in microservice environments.
 
-## Background: Linkerd Security Architecture
+## Background: Service Mesh Security and FedRAMP
 
-Linkerd's security model centers on:
+Linkerd provides critical security capabilities that align with FedRAMP requirements:
 
-1. **Strong Service Identity**: Every service gets a cryptographic identity (SPIFFE-compatible)
-2. **Automatic mTLS**: All inter-service communications are automatically encrypted
-3. **Certificate Management**: Automated certificate rotation and validation
-4. **Policy Enforcement**: Fine-grained access control between services
+- **Zero Trust Architecture** (AC-3, AC-6, SC-7): Linkerd enables a zero trust model by enforcing authentication and authorization for all service-to-service communication
+- **Transport Layer Security** (SC-8, SC-12, SC-13, SC-17): Linkerd provides automatic mTLS for encrypted communications with automated certificate management
+- **Centralized Policy Management** (CM-6, CM-7): Consistent enforcement of security policies across services
+- **Strong Identity** (IA-2, IA-3, IA-5): Service identity based on cryptographic attestation
+- **Comprehensive Monitoring** (AU-2, AU-3, AU-12, SI-4): Detailed telemetry for service interactions
 
-These capabilities map directly to FedRAMP requirements including:
-- **SC-8/SC-13**: Transmission Confidentiality and Integrity
-- **IA-2/IA-5**: Service Identification and Authenticator Management
-- **AC-3/AC-4**: Access Enforcement and Information Flow Control
-- **SI-4/SI-7**: System Monitoring and Information Integrity
+## Task 1: Install Linkerd with Secure Configuration
 
-## Task 1: Install the Linkerd CLI
+### 1.1 Download and Install Linkerd CLI
 
-### Task 1a: Download and Install CLI
-
-First, let's download and install the Linkerd CLI which we'll use to manage our service mesh:
+First, let's download and install the Linkerd CLI:
 
 ```bash
-# Download and install the Linkerd CLI
-curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install | sh
-
-# Note: This may install an edge version. For production, consider downloading
-# a specific stable version from https://linkerd.io/releases/
-```{{exec}}
-
-### Task 1b: Configure Path and Verify Installation
-
-Now let's add Linkerd to your path and verify it's installed correctly:
-
-```bash
-# Add linkerd to your path
+curl -fsL https://run.linkerd.io/install | sh
 export PATH=$PATH:$HOME/.linkerd2/bin
-
-# Verify the CLI is installed correctly
-linkerd version
 ```{{exec}}
 
-## Task 2: Verify Kubernetes Cluster Readiness
+### 1.2 Validate Kubernetes Cluster
 
-Let's check if our Kubernetes cluster is properly configured for Linkerd:
+Let's check that our Kubernetes cluster meets the requirements for Linkerd:
 
 ```bash
-# Run pre-checks to verify cluster configuration
 linkerd check --pre
 ```{{exec}}
 
-This command ensures your Kubernetes cluster meets all the requirements for a Linkerd installation.
+### 1.3 Install Linkerd with FedRAMP-Compliant Settings
 
-## Task 3: Install Linkerd with FedRAMP-Compliant Configuration
-
-### Task 3a: Install Required CRDs
-
-First, let's install the necessary Custom Resource Definitions (CRDs):
+Let's install Linkerd with security settings aligned with FedRAMP requirements:
 
 ```bash
-# Install Gateway API CRDs first
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
+# Generate a secure trust anchor certificate
+mkdir -p ~/linkerd-certs
+step certificate create root.linkerd.cluster.local ~/linkerd-certs/ca.crt ~/linkerd-certs/ca.key \
+  --profile root-ca --no-password --insecure --not-after 8760h
 
-# Now install the Linkerd CRDs
-linkerd install --crds | kubectl apply -f -
+# Generate issuer certificates
+step certificate create identity.linkerd.cluster.local ~/linkerd-certs/issuer.crt ~/linkerd-certs/issuer.key \
+  --profile intermediate-ca --not-after 8760h --no-password --insecure \
+  --ca ~/linkerd-certs/ca.crt --ca-key ~/linkerd-certs/ca.key
+
+# Create Values File
+cat > ~/linkerd-values.yaml << EOF
+identity:
+  issuer:
+    scheme: kubernetes.io/tls
+    tls:
+      crtPEM: |
+$(cat ~/linkerd-certs/issuer.crt | sed 's/^/        /')
+      keyPEM: |
+$(cat ~/linkerd-certs/issuer.key | sed 's/^/        /')
+  # Configure trust roots
+  externalCA: true
+  trustAnchorsPEM: |
+$(cat ~/linkerd-certs/ca.crt | sed 's/^/    /')
+
+# Set proxyInit to run as root
+proxyInit:
+  resources:
+    cpu:
+      request: 100m
+      limit: 100m
+    memory:
+      request: 50Mi
+      limit: 50Mi
+  # SECURITY CONTROL: The proxy init container needs to run as root 
+  # to modify iptables rules. this is a required exception to the
+  # general rule of not running as root/privileged. 
+  runAsRoot: true
+
+# Set resource limits (resource management required by FedRAMP)
+proxy:
+  resources:
+    cpu:
+      request: 100m
+      limit: 1000m
+    memory:
+      request: 20Mi
+      limit: 250Mi
+  # Enable admin server for monitoring 
+  # (monitoring/auditing required by FedRAMP AU-2, AU-12)
+  enableExternalProfiles: true
+  logLevel: info
+  logFormat: json
+
+# Set resource limits for the control plane components
+controllerResources:
+  cpu:
+    request: 100m
+    limit: 1000m
+  memory:
+    request: 50Mi
+    limit: 250Mi
+EOF
+
+# Install Linkerd with the created values
+linkerd install --values ~/linkerd-values.yaml | kubectl apply -f -
 ```{{exec}}
 
-### Task 3b: Install Linkerd Control Plane
+## Task 2: Install Visualization for Monitoring
 
-Now let's install the Linkerd control plane with security-focused settings:
-
-```bash
-# Install the Linkerd control plane with basic settings
-linkerd install | kubectl apply -f -
-
-# Wait for Linkerd to be ready
-kubectl wait --for=condition=ready pod --all -n linkerd --timeout=300s
-```{{exec}}
-
-### Task 3c: Verify Policy Capabilities
-
-In modern Linkerd versions, policy capabilities are typically included in the main installation. Let's check for policy-related CRDs:
+FedRAMP requires comprehensive security monitoring (AU-2, AU-12, SI-4). Let's set up the Linkerd visualization extension:
 
 ```bash
-# Check for policy-related CRDs
-kubectl get crds | grep linkerd.io
-
-# If we don't see any policy CRDs, let's check the available commands
-linkerd --help
-
-# List all Linkerd components to see if a policy component exists
-kubectl get deployments -n linkerd
-
-# Check Linkerd version to understand which features are available
-linkerd version
-```{{exec}}
-
-### Task 3d: Install Visualization Components
-
-Let's add the Linkerd Viz extension for observability and monitoring:
-
-```bash
-# Install the Linkerd Viz extension for observability
 linkerd viz install | kubectl apply -f -
-
-# Wait for the Viz components to be ready
-kubectl wait --for=condition=ready pod --all -n linkerd-viz --timeout=300s
 ```{{exec}}
 
-## Task 4: Verify Installation Security
+## Task 3: Verify Installation and Security
 
-### Task 4a: Run Basic Checks
+### 3.1 Check Linkerd Installation
 
-Let's verify that Linkerd has been installed securely:
+Let's verify that Linkerd is properly installed with our security settings:
 
 ```bash
-# Run linkerd check to ensure everything is working correctly
 linkerd check
 ```{{exec}}
 
-### Task 4b: Verify Proxy and mTLS Configuration
+### 3.2 Check Linkerd Viz Installation
 
-Now let's check the proxy configuration and mTLS settings:
-
-```bash
-# Verify that mTLS is configured correctly
-linkerd check --proxy
-
-# Ensure all Linkerd components are running
-kubectl get pods -n linkerd
-```{{exec}}
-
-## Task 5: Understand Linkerd's Security Components
-
-### Task 5a: Examine Identity Components
-
-Let's explore Linkerd's security architecture components:
+Verify the visualization components (important for monitoring requirements in FedRAMP):
 
 ```bash
-# View the Linkerd identity components
-kubectl get deployments -n linkerd | grep identity
+linkerd viz check
 ```{{exec}}
 
-### Task 5b: Inspect Certificate Authority Setup
+### 3.3 Check mTLS Configuration
 
-Now let's look at how certificates are managed:
+Let's verify that our automatic mTLS is properly configured:
 
 ```bash
-# Check the certificate authority setup
-kubectl get secret linkerd-identity-issuer -n linkerd -o yaml
+linkerd viz edges deployment -n linkerd
 ```{{exec}}
 
-### Task 5c: Examine Proxy Injection Configuration
+This command should show that connections between Linkerd components are secured with mTLS.
 
-Finally, let's examine how Linkerd injects proxies into your workloads:
+## Task 4: Create a Secure Application Namespace
+
+Now, let's create a dedicated namespace with automatic Linkerd proxy injection enabled:
 
 ```bash
-# Examine the Linkerd proxy injector
-kubectl get deployment linkerd-proxy-injector -n linkerd -o yaml | grep -A20 containers:
+# Create the namespace
+kubectl create namespace secure-apps
+
+# Enable Linkerd injection for the namespace
+kubectl annotate namespace secure-apps linkerd.io/inject=enabled
+
+# Verify the namespace annotation
+kubectl get namespace secure-apps --show-labels -o json | jq .metadata.annotations
 ```{{exec}}
 
-## FedRAMP Compliance Check
+## Task 5: Deploy Network Policies for Added Security
 
-Let's evaluate how our Linkerd installation addresses key FedRAMP requirements:
+In addition to Linkerd's built-in security, let's add Kubernetes NetworkPolicies for another layer of security:
 
-### Primary Security Controls
+```bash
+cat <<EOF | kubectl apply -f -
+# Create a default deny policy for the secure-apps namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: secure-apps
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+EOF
+```{{exec}}
 
-1. **SC-8/SC-13 (Transmission Confidentiality and Protection)**:
-   - Linkerd automatically enables mTLS between all meshed services
-   - Uses strong cryptographic algorithms for protection
-   - TLS certificates are short-lived and automatically rotated
+## Task 6: Verify Security Configuration
 
-2. **IA-2 (Service Identification and Authentication)**:
-   - Each service receives a unique SPIFFE-compatible identity
-   - Identity is cryptographically verifiable
-   - All communications use these identities for verification
+Let's check our overall security configuration:
 
-### Supporting Capabilities  
+```bash
+# Check Linkerd proxy injection status
+kubectl get ns secure-apps -o json | jq '.metadata.annotations'
 
-1. **AC-3/AC-4 (Access Enforcement and Information Flow)**:
-   - Policy controller enables granular service-to-service control
-   - Policies can be defined based on service identity
+# View all network policies
+kubectl get networkpolicy -n secure-apps
 
-2. **AU-2/AU-3 (Audit Events/Content)**:
-   - Proxy generates logs of service-to-service communication
-   - Metrics provide visibility into access patterns
-   - Note: External collection systems required for complete audit trail
+# Check Linkerd identity service status
+kubectl get deploy -n linkerd linkerd-identity
+```{{exec}}
 
-### Implementation Note
-Our Linkerd installation provides the foundation for these security controls, but actual enforcement requires:
-1. Deploying applications into the mesh
-2. Defining appropriate authorization policies
-3. Setting up observability and logging infrastructure
+## NIST Compliance Check
 
-In the next step, we'll deploy applications to the mesh and implement security policies to demonstrate these capabilities.
+According to NIST SP 800-204B, a service mesh should establish a security perimeter by:
+1. Enforcing mutual TLS between services
+2. Implementing strong service identity
+3. Providing centralized policy management
+
+Our Linkerd configuration implements all these requirements through:
+- Automatic mTLS for all communications
+- Secure identity-based certificates for all services with proper crypto materials
+- Centralized policy enforcement capability through the control plane
+- Additional network policies for defense-in-depth
+
+In the next step, we'll focus on authentication controls and implementing more granular authorization policies in alignment with FedRAMP requirements.

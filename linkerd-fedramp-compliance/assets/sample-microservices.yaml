@@ -37,13 +37,12 @@ spec:
     metadata:
       labels:
         app: frontend
-      annotations:
-        linkerd.io/inject: enabled
     spec:
       serviceAccountName: frontend
       containers:
-      - name: nginx
-        image: nginx:alpine
+      - name: httpbin
+        image: curlimages/curl:7.83.1
+        command: ["sleep", "infinity"]
         ports:
         - containerPort: 80
         resources:
@@ -53,6 +52,11 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "250m"
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
+          readOnlyRootFilesystem: true
 ---
 apiVersion: v1
 kind: Service
@@ -81,13 +85,11 @@ spec:
     metadata:
       labels:
         app: backend
-      annotations:
-        linkerd.io/inject: enabled
     spec:
       serviceAccountName: backend
       containers:
-      - name: nginx
-        image: nginx:alpine
+      - name: httpbin
+        image: docker.io/kennethreitz/httpbin
         ports:
         - containerPort: 80
         resources:
@@ -97,6 +99,11 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "250m"
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
+          readOnlyRootFilesystem: true
 ---
 apiVersion: v1
 kind: Service
@@ -125,13 +132,11 @@ spec:
     metadata:
       labels:
         app: database
-      annotations:
-        linkerd.io/inject: enabled
     spec:
       serviceAccountName: database
       containers:
-      - name: nginx
-        image: nginx:alpine
+      - name: httpbin
+        image: docker.io/kennethreitz/httpbin
         ports:
         - containerPort: 80
         resources:
@@ -141,6 +146,11 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "250m"
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
+          readOnlyRootFilesystem: true
 ---
 apiVersion: v1
 kind: Service

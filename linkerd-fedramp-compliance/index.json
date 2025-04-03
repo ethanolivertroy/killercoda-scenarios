@@ -1,5 +1,5 @@
 {
-  "title": "Linkerd Service Mesh for FedRAMP Compliance",
+  "title": "Linkerd Service Mesh Security for FedRAMP Compliance",
   "description": "Learn how to implement and assess Linkerd service mesh security controls for FedRAMP compliance based on NIST guidance",
   "details": {
     "intro": {
@@ -7,17 +7,17 @@
     },
     "steps": [
       {
-        "title": "Installing and Configuring a Secure Linkerd Mesh",
+        "title": "Setting Up a Compliant Linkerd Service Mesh",
         "text": "step1/text.md",
         "verify": "step1/verify.sh"
       },
       {
-        "title": "Implementing mTLS and Security Policies",
+        "title": "Implementing mTLS and Authentication Controls",
         "text": "step2/text.md",
         "verify": "step2/verify.sh"
       },
       {
-        "title": "Auditing and Generating Compliance Evidence",
+        "title": "Auditing Authorization Policies and Network Security",
         "text": "step3/text.md",
         "verify": "step3/verify.sh"
       }
@@ -31,7 +31,8 @@
         {"file": "nist-linkerd-guidance.md", "target": "/root", "chmod": "+w"},
         {"file": "sample-microservices.yaml", "target": "/root", "chmod": "+w"},
         {"file": "security-audit-tool.sh", "target": "/root", "chmod": "+x"},
-        {"file": "linkerd-compliance-examples.md", "target": "/root", "chmod": "+w"}
+        {"file": "linkerd-compliance-examples.md", "target": "/root", "chmod": "+w"},
+        {"file": "linkerd-policy-examples.yaml", "target": "/root", "chmod": "+w"}
       ]
     }
   },

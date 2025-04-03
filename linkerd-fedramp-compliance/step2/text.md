@@ -1,212 +1,145 @@
-# Implementing mTLS and Security Policies
+# Implementing mTLS and Authentication Controls
 
-In this step, we'll focus on implementing and validating Linkerd's mTLS capabilities and security policies. These features are critical for meeting FedRAMP requirements around secure communications and access control.
+In this step, we'll deploy microservices and implement authentication controls aligned with FedRAMP requirements. NIST SP 800-204A emphasizes that authentication in microservices should use network-level security (mTLS) complemented by application-level authentication.
 
-## Background: Linkerd Security Features
+## Background: Authentication in Service Meshes
 
-Linkerd's security model addresses several key FedRAMP requirements:
+FedRAMP requires strong authentication controls (IA-2, IA-3, IA-5, IA-8):
 
-- **Automatic mTLS**: All service-to-service communication is automatically encrypted (SC-8)
-- **Service identity**: Each service has a cryptographic identity for authentication (IA-2)
-- **Traffic policy enforcement**: Access controls can be enforced based on service identity (AC-3)
-- **Certificate management**: Automatic rotation of certificates with short lifetimes (IA-5)
+- **Service Identity** (IA-3): Each service must have a cryptographically verifiable identity
+- **Mutual Authentication** (IA-2): Services must authenticate to each other
+- **External User Authentication** (IA-8): Non-organizational users must be authenticated
+- **Certificate Management** (IA-5, SC-12, SC-17): Credentials must be properly managed and rotated
+- **Transport Encryption** (SC-8): All communications must be encrypted
+- **Authentication Policies** (AC-3): Policies should dictate which services can communicate
 
 ## Task 1: Deploy Sample Microservices
 
-First, let's create a namespace for our demo applications and configure it for automatic Linkerd injection:
+### 1.1 Create Service Accounts and Deployments
+
+Let's deploy a set of sample microservices with distinct service accounts to demonstrate authentication controls:
 
 ```bash
-# Create a namespace for our applications
-kubectl create namespace secure-apps
-
-# Annotate the namespace for Linkerd injection
-kubectl annotate namespace secure-apps linkerd.io/inject=enabled
-
-# Check that the namespace exists and is annotated properly
-kubectl get namespace secure-apps --show-labels
-kubectl get namespace secure-apps -o jsonpath='{.metadata.annotations.linkerd\.io/inject}'
+kubectl apply -f /root/sample-microservices.yaml
 ```{{exec}}
 
-Now let's deploy our sample front-end and back-end microservices:
+Wait for the pods to become ready:
 
 ```bash
-# Deploy sample applications with service accounts, deployments, and services
+kubectl wait --for=condition=ready pod -l app=frontend -n secure-apps --timeout=120s
+kubectl wait --for=condition=ready pod -l app=backend -n secure-apps --timeout=120s
+kubectl wait --for=condition=ready pod -l app=database -n secure-apps --timeout=120s
+```{{exec}}
+
+### 1.2 Verify Microservices Deployment
+
+Make sure the pods are running and properly meshed with Linkerd:
+
+```bash
+kubectl get pods -n secure-apps
+linkerd viz stat deploy -n secure-apps
+```{{exec}}
+
+## Task 2: Verify mTLS Configuration
+
+### 2.1 Check mTLS Status for Pods
+
+Let's confirm that our microservices are using mTLS as required by FedRAMP (SC-8, SC-13):
+
+```bash
+# Check the mTLS status
+linkerd viz edges deployment -n secure-apps
+```{{exec}}
+
+You should see that traffic between services is secured with mTLS, indicated by the padlock 🔒 icon.
+
+Let's also check the mesh status of individual pods:
+
+```bash
+linkerd viz stat pods -n secure-apps
+```{{exec}}
+
+### 2.2 Test mTLS Enforcement
+
+Let's verify that we can't connect without proper mTLS certificates:
+
+```bash
+# Create a pod without linkerd-injection to test
+kubectl create namespace non-secure
+kubectl run test-pod --image=curlimages/curl -n non-secure -- sleep 3600
+kubectl wait --for=condition=ready pod/test-pod -n non-secure --timeout=60s
+
+# Try to access the backend service from outside the mesh
+kubectl exec -it test-pod -n non-secure -- curl -v backend.secure-apps.svc.cluster.local
+```{{exec}}
+
+This request should still work because Linkerd allows communication from non-meshed workloads by default. We'll address this in the next step with proper authorization policies.
+
+## Task 3: Implement Authorization Controls
+
+### 3.1 Install the Linkerd Policy Controller
+
+Linkerd's authorization features are provided through the policy controller. Let's install it:
+
+```bash
+linkerd install-policy-controller | kubectl apply -f -
+
+# Wait for the policy controller to be ready
+kubectl wait --for=condition=ready pod -l linkerd.io/control-plane-component=policy -n linkerd --timeout=60s
+```{{exec}}
+
+### 3.2 Create Server Authorization Policies
+
+Let's create server authorization policies to enforce authentication requirements:
+
+```bash
 cat << EOF | kubectl apply -f -
----
-apiVersion: v1
-kind: ServiceAccount
+# Server authorization for backend service
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
 metadata:
-  name: frontend
-  namespace: secure-apps
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: backend
-  namespace: secure-apps
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: frontend
+  name: backend-server-auth
   namespace: secure-apps
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: frontend
-  template:
-    metadata:
-      annotations:
-        linkerd.io/inject: enabled
-      labels:
-        app: frontend
-    spec:
-      serviceAccountName: frontend
-      containers:
-      - name: nginx
-        image: nginx:alpine
-        ports:
-        - containerPort: 80
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: frontend
-  namespace: secure-apps
-spec:
-  ports:
-  - port: 80
-    targetPort: 80
-    name: http
-  selector:
-    app: frontend
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: backend
-  namespace: secure-apps
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: backend
-  template:
-    metadata:
-      annotations:
-        linkerd.io/inject: enabled
-      labels:
+  server:
+    selector:
+      matchLabels:
         app: backend
-    spec:
-      serviceAccountName: backend
-      containers:
-      - name: nginx
-        image: nginx:alpine
-        ports:
-        - containerPort: 80
+  client:
+    # Only allow authenticated traffic from specific services
+    meshTLS:
+      unauthenticated: false
+      identities:
+      - "frontend.secure-apps.serviceaccount.identity.linkerd.cluster.local"
 ---
-apiVersion: v1
-kind: Service
+# Server authorization for database service
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
 metadata:
-  name: backend
+  name: database-server-auth
   namespace: secure-apps
 spec:
-  ports:
-  - port: 80
-    targetPort: 80
-    name: http
-  selector:
-    app: backend
+  server:
+    selector:
+      matchLabels:
+        app: database
+  client:
+    # Only allow authenticated traffic from backend
+    meshTLS:
+      unauthenticated: false
+      identities:
+      - "backend.secure-apps.serviceaccount.identity.linkerd.cluster.local"
 EOF
-
-# Check if the deployments and services were created
-kubectl get deployments,services,serviceaccounts -n secure-apps
 ```{{exec}}
 
-Now, let's create a ConfigMap with HTML content for our backend service and deploy a backend service with the ConfigMap mounted:
+### 3.3 Create a Server Policy
+
+Now let's create a server policy to enforce the authorization requirements:
 
 ```bash
-# Create a ConfigMap with content for the backend service and update the backend deployment
 cat << EOF | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: backend-content
-  namespace: secure-apps
-data:
-  index.html: |
-    <!DOCTYPE html>
-    <html>
-    <head><title>Backend Service</title></head>
-    <body>
-      <h1>Hello from Backend Service</h1>
-      <p>This is a test page from the backend service.</p>
-    </body>
-    </html>
-EOF
-
-# Update the backend deployment to use the ConfigMap
-kubectl patch deployment backend -n secure-apps --type=json -p='[
-  {"op": "add", "path": "/spec/template/spec/containers/0/volumeMounts", "value": [{"name": "content", "mountPath": "/usr/share/nginx/html"}]},
-  {"op": "add", "path": "/spec/template/spec/volumes", "value": [{"name": "content", "configMap": {"name": "backend-content"}}]}
-]'
-
-# Make sure both deployments are fully ready
-kubectl wait --for=condition=available deployment/frontend -n secure-apps --timeout=90s
-kubectl wait --for=condition=available deployment/backend -n secure-apps --timeout=90s
-
-# Check that pods are running with Linkerd proxies injected
-kubectl get pods -n secure-apps
-```{{exec}}
-
-## Task 2: Verify mTLS Encryption
-
-Let's verify that our pods have been properly injected with the Linkerd proxy and that mTLS is enabled:
-
-```bash
-# Check that the pods have been injected with the Linkerd proxy (should show 2/2 containers)
-kubectl get pods -n secure-apps
-
-# Verify which containers are in the pods
-FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
-echo "Containers in frontend pod:"
-kubectl get pod $FRONTEND_POD -n secure-apps -o jsonpath='{.spec.containers[*].name}'
-echo
-
-# Verify that mTLS is enabled for our services (check for √ in the mTLS column)
-linkerd viz edges -n secure-apps deployment
-linkerd viz stat -n secure-apps deployment
-```{{exec}}
-
-This confirms that Linkerd has established mTLS between our services, meeting SC-8 requirements for encrypted communications.
-
-## Task 3: Implement Authorization Policies
-
-Now let's verify the policy capabilities in our Linkerd installation and create authorization policies:
-
-```bash
-# Check for policy-related CRDs
-kubectl get crds | grep linkerd.io
-
-# Check API resources
-kubectl api-resources | grep linkerd.io
-
-# If needed, install curl in the frontend pod to test connectivity
-FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
-kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- apk add --no-cache curl
-
-# Test baseline connectivity before applying policies
-kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend.secure-apps.svc.cluster.local
-```{{exec}}
-
-Let's create a Server resource and ServerAuthorization policy to restrict access to the backend service:
-
-```bash
-# Create Server and ServerAuthorization resources using the recommended API versions
-# First, create the Server
-cat << EOF | kubectl apply -f -
-apiVersion: policy.linkerd.io/v1beta3
+# Server policy for backend
+apiVersion: policy.linkerd.io/v1beta1
 kind: Server
 metadata:
   name: backend-server
@@ -217,133 +150,150 @@ spec:
       app: backend
   port: 80
   proxyProtocol: HTTP/1
-EOF
-
-# Check which API version of ServerAuthorization is supported
-echo "Checking supported ServerAuthorization API version..."
-if kubectl api-resources | grep -q serverauthorizations.policy.linkerd.io ; then
-  echo "Using ServerAuthorization v1beta1 API format"
-  cat << EOF | kubectl apply -f -
+---
+# Server policy for database
 apiVersion: policy.linkerd.io/v1beta1
-kind: ServerAuthorization
+kind: Server
 metadata:
-  name: backend-server-auth
+  name: database-server
   namespace: secure-apps
 spec:
-  server: backend-server
-  client:
-    # Only allow frontend service account
-    unauthenticated: false
-    meshTLS:
-      serviceAccounts:
-        - name: frontend
-          namespace: secure-apps
+  podSelector:
+    matchLabels:
+      app: database
+  port: 80
+  proxyProtocol: HTTP/1
 EOF
-else
-  echo "Using older ServerAuthorization API format"
-  cat << EOF | kubectl apply -f -
-apiVersion: policy.linkerd.io/v1alpha1
-kind: ServerAuthorization
+```{{exec}}
+
+### 3.4 Verify the Policies
+
+Let's check that our policies have been created:
+
+```bash
+kubectl get server,serverauthorization -n secure-apps
+```{{exec}}
+
+## Task 4: Test Authentication and Authorization Enforcement
+
+### 4.1 Test with Authorized Service
+
+Let's test that our frontend can access the backend (authorized):
+
+```bash
+# Get the frontend pod name
+FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath={.items..metadata.name})
+
+# Access backend with proper mTLS (should work)
+kubectl exec -n secure-apps $FRONTEND_POD -- curl -s http://backend:80/headers
+```{{exec}}
+
+The request should succeed since it's coming from the frontend service with proper mTLS identity.
+
+### 4.2 Test Direct Access to Database (Should Fail)
+
+Now let's test accessing the database directly from frontend (should be denied):
+
+```bash
+kubectl exec -n secure-apps $FRONTEND_POD -- curl -s http://database:80/headers
+```{{exec}}
+
+This should fail because our policies only allow the backend to access the database.
+
+### 4.3 Test Access from Backend to Database (Should Work)
+
+Let's verify the backend can access the database:
+
+```bash
+# Get the backend pod name
+BACKEND_POD=$(kubectl get pod -n secure-apps -l app=backend -o jsonpath={.items..metadata.name})
+
+# Access database from backend (should work)
+kubectl exec -n secure-apps $BACKEND_POD -- curl -s http://database:80/headers
+```{{exec}}
+
+This should succeed since the backend is authorized to access the database.
+
+### 4.4 Test with Non-Meshed Pod (Should Fail)
+
+Let's verify our policies prevent access from non-meshed workloads:
+
+```bash
+# Try to access the backend from non-meshed pod
+kubectl exec -it test-pod -n non-secure -- curl -v backend.secure-apps.svc.cluster.local
+```{{exec}}
+
+This should now fail because our ServerAuthorization policy requires mTLS authentication and specific service identity.
+
+## Task 5: Implement Network Policies for Additional Security
+
+To provide defense-in-depth, let's add Kubernetes NetworkPolicies to complement our Linkerd policies:
+
+```bash
+cat << EOF | kubectl apply -f -
+# Allow traffic only from frontend to backend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
-  name: backend-server-auth
+  name: allow-frontend-to-backend
   namespace: secure-apps
 spec:
-  server: backend-server
-  client:
-    # Only allow frontend service account
-    unauthenticated: false
-    meshTLS:
-      serviceAccounts:
-        - name: frontend
-          namespace: secure-apps
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: frontend
+    ports:
+    - protocol: TCP
+      port: 80
+---
+# Allow traffic only from backend to database
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-to-database
+  namespace: secure-apps
+spec:
+  podSelector:
+    matchLabels:
+      app: database
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: backend
+    ports:
+    - protocol: TCP
+      port: 80
 EOF
-fi
 ```{{exec}}
 
-Verify that our Server and ServerAuthorization resources were created:
+### 5.1 Verify Network Policies
+
+Let's check our network policies:
 
 ```bash
-# Check if the resources were created
-kubectl get server -n secure-apps
-kubectl get serverauthorization -n secure-apps
-
-# Describe the Server
-kubectl describe server backend-server -n secure-apps
-
-# Describe the ServerAuthorization
-kubectl describe serverauthorization backend-server-auth -n secure-apps
+kubectl get networkpolicy -n secure-apps
 ```{{exec}}
 
-## Task 4: Test Authorization Policies
+## NIST Compliance Check
 
-Let's create a test pod and verify that unauthorized access is denied:
+According to NIST SP 800-204B, secure service-to-service communication should implement:
+1. Transport layer security (mTLS)
+2. Service authentication based on identity
+3. Authorization based on identity and attributes
 
-```bash
-# Create a test pod for validation
-kubectl run test-pod --image=nginx:alpine -n secure-apps
-kubectl wait --for=condition=ready pod/test-pod -n secure-apps --timeout=60s
+Our configuration satisfies these requirements through:
+- Automatic mTLS for transport security between all meshed services
+- Service account-based identity for service authentication
+- Server authorization policies based on service identity
+- Network policies for additional layer of defense
 
-# Annotate the test pod to be added to the mesh
-kubectl annotate pod test-pod -n secure-apps linkerd.io/inject=enabled
-
-# Delete and recreate the pod to apply the annotation
-kubectl delete pod test-pod -n secure-apps
-kubectl run test-pod --image=nginx:alpine -n secure-apps
-kubectl wait --for=condition=ready pod/test-pod -n secure-apps --timeout=60s
-
-# Install curl in the test pod
-kubectl exec -it test-pod -n secure-apps -c nginx -- apk add --no-cache curl
-
-# Try to access the backend service from the test pod (should fail)
-echo "Testing unauthorized access from test-pod (should fail):"
-kubectl exec -it test-pod -n secure-apps -c nginx -- curl -s --max-time 5 http://backend.secure-apps.svc.cluster.local || echo "Access denied as expected"
-```{{exec}}
-
-Now, let's verify that our frontend pod (which is authorized) can access the backend service:
-
-```bash
-# Get frontend pod name
-FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
-
-# Try to access the backend service from the frontend pod (should succeed)
-echo "Testing authorized access from frontend pod (should succeed):"
-kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend.secure-apps.svc.cluster.local
-```{{exec}}
-
-## Task 5: Verify FedRAMP Security Controls
-
-Let's validate our implementation against key FedRAMP security controls:
-
-```bash
-# View the mTLS status for connections in the secure-apps namespace
-linkerd viz edges deployment -n secure-apps
-
-# Check proxy metrics and certificates
-linkerd viz stat -n secure-apps deployment
-
-# Check if authorization is working by examining tap data
-linkerd viz tap deployment/frontend -n secure-apps --to deployment/backend -n secure-apps --path / -o wide
-```{{exec}}
-
-## Task 6: Document FedRAMP Controls
-
-Our Linkerd implementation addresses key FedRAMP requirements from NIST SP 800-53 Rev 5:
-
-### Primary Security Controls
-
-- **SC-8 (Transmission Confidentiality)**: Confirmed mTLS encryption between all services
-- **SC-13 (Cryptographic Protection)**: Linkerd uses TLS 1.3 with strong algorithms
-- **SC-23 (Session Authenticity)**: Verified mutual authentication via mTLS
-- **AC-3 (Access Enforcement)**: Server authorization policies restrict access based on identity
-- **AC-4 (Information Flow Enforcement)**: Implemented control of service-to-service communication
-- **IA-2 (Identification and Authentication)**: Each service has a SPIFFE identity
-- **IA-5 (Authenticator Management)**: Certificates automatically rotate with short lifetimes
-
-### Implementation Verification
-
-1. **Policy Enforcement**: We confirmed unauthorized pods cannot access protected services
-2. **Identity Verification**: Services establish secure connections using unique identities
-3. **Communication Security**: All traffic between services is encrypted via mTLS
-4. **Observability**: Metrics capture security events for auditing
-
-In the next step, we'll focus on auditing our service mesh and generating compliance evidence.
+In the next step, we'll focus on auditing authorization policies and network security to further enhance our FedRAMP compliance.

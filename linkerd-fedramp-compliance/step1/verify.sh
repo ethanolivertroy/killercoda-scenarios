@@ -1,36 +1,23 @@
 #!/bin/bash
 
-# Check that Linkerd is installed with basic components
-if kubectl get namespace linkerd &>/dev/null; then
-  # Check if linkerd-config exists
-  if kubectl get configmap linkerd-config -n linkerd &>/dev/null; then
-    # Check that the required deployments exist
-    if kubectl get deployment linkerd-identity -n linkerd &>/dev/null && \
-       kubectl get deployment linkerd-destination -n linkerd &>/dev/null && \
-       kubectl get deployment linkerd-proxy-injector -n linkerd &>/dev/null; then
-      
-      # Check that at least one pod for each deployment is running
-      IDENTITY_PODS=$(kubectl get pods -n linkerd -l linkerd.io/control-plane-component=identity -o jsonpath='{.items[*].status.phase}' | grep -c "Running" || echo "0")
-      DESTINATION_PODS=$(kubectl get pods -n linkerd -l linkerd.io/control-plane-component=destination -o jsonpath='{.items[*].status.phase}' | grep -c "Running" || echo "0")
-      PROXY_INJECTOR_PODS=$(kubectl get pods -n linkerd -l linkerd.io/control-plane-component=proxy-injector -o jsonpath='{.items[*].status.phase}' | grep -c "Running" || echo "0")
-      
-      if [ "$IDENTITY_PODS" -gt 0 ] && [ "$DESTINATION_PODS" -gt 0 ] && [ "$PROXY_INJECTOR_PODS" -gt 0 ]; then
-        # Also check for Viz extension, but don't fail if it's not there yet
-        if kubectl get namespace linkerd-viz &>/dev/null; then
-          VIZ_PODS=$(kubectl get pods -n linkerd-viz -o jsonpath='{.items[*].status.phase}' | grep -c "Running" || echo "0")
-          if [ "$VIZ_PODS" -gt 0 ]; then
-            echo "Great! You've successfully installed a secure Linkerd service mesh with the Viz extension."
-          else
-            echo "Great! You've successfully installed a secure Linkerd service mesh, but Viz extension pods are not running yet."
-          fi
-        else
-          echo "Great! You've successfully installed a secure Linkerd service mesh. Don't forget to install the Viz extension."
-        fi
-        exit 0
-      fi
-    fi
-  fi
+# Check if Linkerd is installed
+if ! kubectl get namespace linkerd &>/dev/null; then
+  echo "Linkerd is not installed. Please complete the step."
+  exit 1
 fi
 
-echo "The Linkerd service mesh is not completely configured. Please complete all tasks."
-exit 1
+# Check if secure-apps namespace exists with correct annotation
+if ! kubectl get namespace secure-apps -o jsonpath='{.metadata.annotations.linkerd\.io/inject}' | grep -q "enabled"; then
+  echo "secure-apps namespace is not properly configured with Linkerd injection."
+  exit 1
+fi
+
+# Check if default network policy exists
+if ! kubectl get networkpolicy default-deny -n secure-apps &>/dev/null; then
+  echo "Default deny network policy is not configured in secure-apps namespace."
+  exit 1
+fi
+
+# Success
+echo "Step 1 completed successfully!"
+exit 0

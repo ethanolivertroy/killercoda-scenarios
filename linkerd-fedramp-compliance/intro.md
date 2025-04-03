@@ -1,97 +1,91 @@
-# Linkerd Service Mesh for FedRAMP Compliance
+# Linkerd Service Mesh Security for FedRAMP Compliance
 
-Welcome to the Linkerd Service Mesh for FedRAMP Compliance workshop!
+Welcome to the Linkerd Service Mesh Security for FedRAMP Compliance workshop!
 
 ## What is Linkerd?
 
-Linkerd is an ultra-lightweight, security-focused service mesh that adds critical security and reliability features to your Kubernetes applications without requiring any code changes. Unlike more complex service meshes, Linkerd focuses on simplicity and performance while providing the essential capabilities needed for modern cloud-native applications.
+Linkerd is an ultralight, security-focused service mesh for Kubernetes. As a Cloud Native Computing Foundation (CNCF) graduated project, Linkerd provides a service mesh that is:
 
-Linkerd follows the "do one thing and do it well" Unix philosophy, offering:
-
-- **A focused feature set** around security, reliability, and observability
-- **An ultra-lightweight data plane** written in Rust for performance and security
-- **Simple, intuitive installation and management**
-- **Minimalist design philosophy** that reduces the attack surface
+- **Simple and minimalist** with a focus on being the easiest service mesh to operate
+- **Ultra-lightweight** with a slim control plane and tiny Rust-based proxies
+- **Security-first** with automatic mTLS, policy enforcement, and advanced authorization controls
 
 ## What Problems Does Linkerd Solve?
 
-Modern microservice deployments face several challenges that Linkerd efficiently addresses:
+Modern cloud-native applications face several challenges that Linkerd helps solve:
 
 1. **Security Challenges**:
-   - Zero-config mutual TLS for all services
-   - Per-service identity and authentication
-   - Secure certificate management without user intervention
-   - Protection against MITM attacks
+   - Service-to-service authentication and authorization
+   - Transparent encryption with automatic mTLS
+   - Certificate management and rotation
+   - Zero-trust networking
 
-2. **Reliability Challenges**:
-   - Automatic retries and circuit breaking
-   - Intelligent load balancing
-   - Traffic shifting
-   - Fault injection for testing
+2. **Operational Challenges**:
+   - Service discovery and load balancing
+   - Automatic retries and timeouts
+   - Transparent proxy injection
+   - Traffic splitting for canary deployments
 
 3. **Observability Challenges**:
-   - Golden metrics (success rates, latencies, throughput)
-   - Service topology visualization
-   - Protocol-aware metrics
-   - Distributed tracing integration
+   - Golden metrics for all services
+   - Distributed tracing
+   - Service health monitoring
+   - Real-time service dependency mapping
 
-## Why Choose Linkerd?
+## Why Use Linkerd?
 
-Organizations choose Linkerd over other service meshes for several key reasons:
+Organizations adopt Linkerd for several key benefits:
 
-- **Simplicity**: Dramatically easier to install, understand, and maintain
-- **Performance**: Extremely low latency overhead (typically <1ms per request)
-- **Security-first design**: Built with a security-critical approach
-- **Resource efficiency**: Requires far fewer cluster resources
-- **Enterprise readiness**: Production-proven with high-scale deployments
+- **Simplicity**: Linkerd focuses on being the simplest and easiest service mesh to operate
+- **Performance**: With its Rust-based micro-proxy, Linkerd has near-zero performance impact
+- **Security-first Design**: Built from the ground up with security as a primary concern
+- **Minimalist Philosophy**: Linkerd does what you need without unnecessary complexity
+- **Compliance Enablement**: Linkerd makes it easier to implement and demonstrate compliance with security requirements
 
 ## Linkerd and FedRAMP Compliance
 
-Linkerd offers a streamlined approach to implementing many NIST 800-53 controls. Below we distinguish between the strongest direct mappings and controls where Linkerd provides supplementary or partial capabilities.
+Linkerd is particularly valuable for FedRAMP compliance because it addresses many NIST 800-53 controls out of the box, including:
 
-### Strongest Direct Control Mappings
+- **SC-8**: Transmission Confidentiality and Integrity (via automatic mTLS)
+- **SC-12**: Cryptographic Key Establishment and Management (via automatic certificate management)
+- **SC-17**: Public Key Infrastructure Certificates (via workload identity)
+- **AC-3**: Access Enforcement (via authorization policies)
+- **AC-4**: Information Flow Control (via network policies)
+- **AC-6**: Least Privilege (via granular authorization rules)
+- **IA-2/IA-3**: Identification and Authentication (via service identity)
+- **IA-5**: Authenticator Management (via certificate rotation)
+- **AU-2/AU-3**: Audit and Accountability (via access logging)
+- **SI-4**: Information System Monitoring (via metrics and observability)
 
-These controls are directly implemented or significantly addressed by Linkerd features:
-
-- **SC-8**: Transmission Confidentiality and Integrity through automatic mTLS
-- **SC-13**: Cryptographic Protection using strong TLS implementations
-- **SC-23**: Session Authenticity through mutual service authentication
-- **AC-3**: Access Enforcement via service authorization policies
-- **AC-4**: Information Flow Control between mesh services
-- **IA-2**: Service Identity with SPIFFE-compatible certificates
-- **IA-5**: Certificate Lifecycle Management and rotation
-
-### Supporting Control Mappings
-
-Linkerd contributes to these controls but typically requires integration with other systems:
-
-- **SC-7**: Internal Boundary Protection via service policies (complementing network policies)
-- **SC-12**: Cryptographic Key Management limited to service certificates
-- **SC-17**: PKI Certificates for workload identity (not human identities)
-- **AC-6**: Least Privilege for service-to-service communication
-- **AU-2/AU-3**: Audit Events captured but requires external collection
-- **AU-12**: Audit Generation specific to service-to-service interactions
-- **SI-4**: Monitoring of service communication (requires dashboards/alerting)
-- **SI-7**: Data Integrity verification in transit between services
-
-**Important Note on Scope**: Linkerd primarily addresses internal service-to-service communication security within a Kubernetes cluster. It does not address remote access (AC-17) into the cluster from external networks - that requires complementary solutions like VPNs, API gateways, or ingress controllers.
-
-**Completeness Consideration**: Linkerd is often part of the solution for a control, not the entire solution. For example, while Linkerd generates audit data (AU-12), you still need systems to collect, store, and analyze it (AU-4, AU-6).
-
-Compared to other solutions, Linkerd's approach to these controls combines simplicity with strong security foundations, making it an excellent choice for teams that need FedRAMP compliance without excessive complexity.
+In this scenario, you'll learn how to implement and assess security controls in Linkerd service meshes to meet FedRAMP requirements based on NIST 800-53 controls and NIST 800-204 series guidance for microservices.
 
 ## What you'll learn
 
-In this scenario, you'll learn how to:
+- How to deploy a secure, FedRAMP-compliant Linkerd service mesh
+- How to configure and validate mutual TLS (mTLS) for service-to-service communication
+- How to implement authentication and authorization controls aligned with NIST requirements
+- How to audit authorization policies for least privilege
+- How to assess and improve network security in a service mesh
+- How to generate compliance evidence for FedRAMP documentation
 
-- Install and configure a secure Linkerd service mesh with FedRAMP-compliant settings
-- Implement and verify mutual TLS across your microservice deployments
-- Apply security policies to enforce access controls across services
-- Perform compliance auditing and generate evidence for FedRAMP authorization
-- Understand how Linkerd's features map to specific NIST 800-53 controls
+## NIST Guidance for Service Mesh Security
+
+This workshop is based on the following NIST publications:
+- NIST SP 800-53 Rev. 5: Security and Privacy Controls
+- NIST SP 800-204: Security Strategies for Microservices
+- NIST SP 800-204A: Building Secure Microservices-based Applications
+- NIST SP 800-204B: Attribute-based Access Control for Microservices
+- NIST SP 800-204C: Implementation of DevSecOps for Microservices
+- NIST SP 800-204D: Security Strategies for Container Runtimes and Orchestration in Microservices
+
+You can review a summary of this guidance at any time:
+
+```bash
+cat /root/nist-linkerd-guidance.md
+```{{exec}}
 
 ## Environment Setup
 
-Your environment is a 2-node Kubernetes cluster. During this workshop, we'll install Linkerd and deploy sample microservices to demonstrate security concepts and FedRAMP compliance approaches.
+Your environment is a 2-node Kubernetes cluster. During this workshop, we'll install Linkerd and deploy sample microservices to demonstrate security concepts.
 
 Let's get started by setting up a FedRAMP-compliant Linkerd service mesh!

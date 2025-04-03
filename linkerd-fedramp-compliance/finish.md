@@ -1,44 +1,36 @@
 # Congratulations!
 
-You've successfully completed the Linkerd Service Mesh for FedRAMP Compliance workshop!
+You've successfully completed the Linkerd Service Mesh Security for FedRAMP Compliance workshop!
 
 ## What You've Learned
 
-In this workshop, you've learned how to leverage Linkerd's lightweight, security-focused service mesh to implement and document FedRAMP security controls:
+In this workshop, you've learned how to implement and assess security controls in Linkerd service meshes to meet FedRAMP requirements based on NIST SP 800-53 controls and NIST SP 800-204 series guidance. Specifically, you've:
 
-1. **Installation and Configuration**: Deployed Linkerd with FedRAMP-compliant security settings
-2. **Security Implementation**: Enabled automatic mTLS, configured authorization policies, and enforced access controls
-3. **Auditing and Documentation**: Generated compliance evidence, created FedRAMP documentation, and implemented continuous monitoring
+1. Set up a secure Linkerd service mesh with FedRAMP-compliant configuration
+2. Implemented and validated automatic mTLS for service-to-service encryption (SC-8, SC-13)
+3. Configured authorization policies based on service identity (AC-3, AC-6)
+4. Implemented network security controls (SC-7, AC-4)
+5. Performed a FedRAMP security audit of your service mesh
+6. Generated compliance documentation for FedRAMP evidence
 
-## Key FedRAMP Controls Addressed
+## NIST Controls Implemented
 
-The Linkerd service mesh helps you address these critical FedRAMP controls:
-
-| Control Family | Controls | Linkerd Implementation |
-|----------------|----------|------------------------|
-| Access Control | AC-3, AC-4, AC-6 | Authorization policies, HTTP routes, least privilege |
-| Identification & Authentication | IA-2, IA-5 | Service identity, certificate management |
-| System & Communications Protection | SC-7, SC-8, SC-13 | Network segmentation, mTLS encryption, cryptography |
-| Audit & Accountability | AU-2, AU-3, AU-12 | Traffic logging, metrics, continuous monitoring |
-
-## Linkerd vs. Other Service Meshes
-
-Compared to other service mesh options like Istio:
-
-- **Simpler Implementation**: Linkerd is dramatically easier to install and operate
-- **Lower Overhead**: Linkerd uses significantly fewer cluster resources
-- **Focus on Essentials**: Core security features without unnecessary complexity
-- **Performance First**: Ultra-low latency impact on application performance
+| Control Family | Controls | Service Mesh Implementation |
+|----------------|----------|------------------------------|
+| Access Control | AC-3, AC-4, AC-6 | ServerAuthorization policies, network policies |
+| Identification & Authentication | IA-3, IA-5 | Service identity, automatic mTLS |
+| System & Communications Protection | SC-7, SC-8, SC-13 | Network segmentation, mTLS encryption |
+| Audit & Accountability | AU-2, AU-3, AU-12 | Metrics, telemetry, monitoring |
 
 ## Next Steps
 
 To continue your journey with Linkerd and FedRAMP compliance:
 
-1. **Integrate with External PKI**: Connect Linkerd to your organization's certificate authority
-2. **Enhance Authorization Policies**: Develop comprehensive policies for all services
-3. **Implement Continuous Monitoring**: Configure alerts for security events
-4. **Complete Documentation**: Finalize your FedRAMP System Security Plan (SSP)
-5. **Automate Compliance Checks**: Integrate compliance validation into CI/CD
+1. Explore advanced authorization scenarios with more complex policies
+2. Implement end-user authentication and authorization with external identity providers
+3. Set up continuous compliance monitoring with alerts
+4. Integrate with API gateways for external access control
+5. Implement secure CI/CD practices for your service mesh configuration
 
 Remember that FedRAMP compliance is an ongoing process that requires continuous monitoring and improvement. The controls implemented in this workshop provide a solid foundation, but you should continue to adapt and enhance your security posture as requirements evolve.
 

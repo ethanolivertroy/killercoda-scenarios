@@ -1,68 +1,94 @@
-# Examples of Linkerd policy resources with correct API versions
-
-# Server resource - defines a server receiving traffic
-apiVersion: policy.linkerd.io/v1beta3
-kind: Server
-metadata:
-  name: backend-server
-  namespace: secure-apps
-spec:
-  podSelector:
-    matchLabels:
-      app: backend
-  port: 80
-  proxyProtocol: HTTP/1
 ---
-# ServerAuthorization resource - controls who can access the server
+# Example of a default-deny ServerAuthorization policy
 apiVersion: policy.linkerd.io/v1beta1
 kind: ServerAuthorization
 metadata:
   name: backend-server-auth
   namespace: secure-apps
 spec:
-  server: backend-server
+  server:
+    selector:
+      matchLabels:
+        app: backend
   client:
-    # Only allow the frontend service to access the backend service
-    unauthenticated: false
+    # Only allow specific services to communicate with backend
     meshTLS:
-      serviceAccounts:
-        - name: frontend
-          namespace: secure-apps
+      unauthenticated: false
+      identities:
+      - "frontend.secure-apps.serviceaccount.identity.linkerd.cluster.local"
 ---
-# HTTPRoute resource - controls HTTP-level access
-apiVersion: policy.linkerd.io/v1beta3
+# Example of a NetworkAuthentication policy
+apiVersion: policy.linkerd.io/v1beta1
+kind: NetworkAuthentication
+metadata:
+  name: backend-network-auth
+  namespace: secure-apps
+spec:
+  networks:
+  - cidr: "10.0.0.0/16"
+    except:
+    - "10.0.1.0/24"
+  - cidr: "192.168.0.0/16"
+---
+# Example of a MeshTLS policy
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLS
+metadata:
+  name: service-mesh-auth
+  namespace: secure-apps
+spec:
+  identities:
+  - "*.secure-apps.serviceaccount.identity.linkerd.cluster.local"
+  - "*.monitoring.serviceaccount.identity.linkerd.cluster.local"
+---
+# Example of a Kubernetes NetworkPolicy for additional security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: secure-apps
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+# Specific allow NetworkPolicy for frontend to backend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-to-backend
+  namespace: secure-apps
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: frontend
+    ports:
+    - protocol: TCP
+      port: 80
+---
+# Example HTTPRoute (Gateway API) for Linkerd ingress
+apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: HTTPRoute
 metadata:
-  name: backend-route
+  name: frontend-route
   namespace: secure-apps
 spec:
   parentRefs:
-  - name: backend-server
-    kind: Server
+  - name: linkerd-gateway
+    namespace: linkerd-gateway
   rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /
----
-# Example of a more restrictive HTTPRoute allowing only specific methods
-apiVersion: policy.linkerd.io/v1beta3
-kind: HTTPRoute
-metadata:
-  name: backend-route-with-methods
-  namespace: secure-apps
-spec:
-  parentRefs:
-  - name: backend-server
-    kind: Server
-  rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /
-      method: GET
   - matches:
     - path:
         type: PathPrefix
         value: /api
-      method: POST
+    backendRefs:
+    - name: frontend
+      port: 80

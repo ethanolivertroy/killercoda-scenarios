@@ -1,52 +1,48 @@
-# Linkerd FedRAMP Compliance Workshop
+# Linkerd Service Mesh Security for FedRAMP Compliance
 
-This workshop demonstrates how to use Linkerd service mesh to implement security controls required for FedRAMP compliance.
+This Killercoda scenario teaches how to implement and assess Linkerd service mesh security controls for FedRAMP compliance based on NIST guidance.
 
 ## Workshop Overview
 
-This interactive tutorial covers:
+In this interactive workshop, participants will learn how to:
 
-1. **Introduction to Linkerd and FedRAMP Requirements**
-   - How service mesh helps meet NIST 800-53 controls
+1. Set up a compliant Linkerd service mesh with secure configuration
+2. Implement mTLS and authentication controls
+3. Configure authorization policies based on service identity
+4. Audit service mesh security configuration for FedRAMP compliance
+5. Generate compliance documentation and evidence
 
-2. **Implementing mTLS and Security Policies**
-   - Setting up automatic mTLS encryption
-   - Creating identity-based authorization policies
-   - Implementing HTTP-level access controls
+## NIST Guidance
 
-3. **Auditing and Compliance Evidence**
-   - Generating compliance evidence
-   - Monitoring service mesh security
+This workshop is based on guidance from multiple NIST Special Publications:
 
-## Implementation Notes
+- NIST SP 800-53 Rev. 5: Security and Privacy Controls
+- NIST SP 800-204: Security Strategies for Microservices
+- NIST SP 800-204A: Building Secure Microservices-based Applications
+- NIST SP 800-204B: Attribute-based Access Control for Microservices
+- NIST SP 800-204C: Implementation of DevSecOps for Microservices
+- NIST SP 800-204D: Security Strategies for Container Runtimes and Orchestration in Microservices
 
-The key security features demonstrated in this workshop include:
+## Target Audience
 
-- **Automatic mTLS** - All service-to-service communication is encrypted
-- **Service Identity** - Each service has a cryptographic identity
-- **Authorization Policies** - Fine-grained access controls using:
-  - Server resources (`policy.linkerd.io/v1beta3`)
-  - ServerAuthorization resources (`policy.linkerd.io/v1beta1`) 
-  - HTTPRoute resources (`policy.linkerd.io/v1beta3`)
+This workshop is designed for:
 
-## Workshop Files
+- Cloud security professionals
+- Kubernetes administrators
+- DevSecOps engineers
+- FedRAMP compliance specialists
+- Security architects working with microservices
 
-- `intro.md` - Introduction to the workshop
-- `step1/` - Installation and setup
-- `step2/` - Implementing mTLS and security policies
-- `step3/` - Auditing and compliance evidence
-- `finish.md` - Summary and next steps
-- `assets/` - Supporting files including:
-  - `linkerd-policy-examples.yaml` - Examples of correctly formatted policy resources
-  - Other reference materials
+## Prerequisites
 
-## FedRAMP Controls Addressed
+- Basic understanding of Kubernetes concepts
+- Familiarity with microservices architecture
+- Basic understanding of security concepts
 
-This workshop demonstrates how Linkerd helps meet key FedRAMP controls including:
+No prior knowledge of Linkerd or service mesh technologies is required.
 
-- SC-8 (Transmission Confidentiality)
-- SC-13 (Cryptographic Protection)
-- AC-3 (Access Enforcement)
-- AC-4 (Information Flow Enforcement)
-- IA-2 (Identification and Authentication)
-- IA-5 (Authenticator Management)
+## Workshop Structure
+
+1. Setting Up a Compliant Linkerd Service Mesh
+2. Implementing mTLS and Authentication Controls
+3. Auditing Authorization Policies and Network Security
