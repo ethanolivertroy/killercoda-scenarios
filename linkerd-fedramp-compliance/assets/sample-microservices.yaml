@@ -41,17 +41,16 @@ spec:
       serviceAccountName: frontend
       containers:
       - name: httpbin
-        image: curlimages/curl:7.83.1
-        command: ["sleep", "infinity"]
+        image: nginx:alpine
         ports:
         - containerPort: 80
         resources:
           requests:
+            memory: "16Mi"
+            cpu: "50m"
+          limits:
             memory: "64Mi"
             cpu: "100m"
-          limits:
-            memory: "128Mi"
-            cpu: "250m"
         securityContext:
           runAsUser: 1000
           runAsGroup: 1000
@@ -89,16 +88,16 @@ spec:
       serviceAccountName: backend
       containers:
       - name: httpbin
-        image: docker.io/kennethreitz/httpbin
+        image: nginx:alpine
         ports:
         - containerPort: 80
         resources:
           requests:
+            memory: "16Mi"
+            cpu: "50m"
+          limits:
             memory: "64Mi"
             cpu: "100m"
-          limits:
-            memory: "128Mi"
-            cpu: "250m"
         securityContext:
           runAsUser: 1000
           runAsGroup: 1000
@@ -136,16 +135,16 @@ spec:
       serviceAccountName: database
       containers:
       - name: httpbin
-        image: docker.io/kennethreitz/httpbin
+        image: nginx:alpine
         ports:
         - containerPort: 80
         resources:
           requests:
+            memory: "16Mi"
+            cpu: "50m"
+          limits:
             memory: "64Mi"
             cpu: "100m"
-          limits:
-            memory: "128Mi"
-            cpu: "250m"
         securityContext:
           runAsUser: 1000
           runAsGroup: 1000

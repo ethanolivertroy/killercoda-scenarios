@@ -26,9 +26,17 @@ kubectl apply -f /root/sample-microservices.yaml
 Wait for the pods to become ready:
 
 ```bash
-kubectl wait --for=condition=ready pod -l app=frontend -n secure-apps --timeout=120s
-kubectl wait --for=condition=ready pod -l app=backend -n secure-apps --timeout=120s
-kubectl wait --for=condition=ready pod -l app=database -n secure-apps --timeout=120s
+# Wait with a shorter timeout for each pod
+kubectl wait --for=condition=ready pod -l app=frontend -n secure-apps --timeout=60s
+kubectl wait --for=condition=ready pod -l app=backend -n secure-apps --timeout=60s
+kubectl wait --for=condition=ready pod -l app=database -n secure-apps --timeout=60s
+
+# If pods aren't ready, check their status
+kubectl get pods -n secure-apps
+
+# Troubleshooting: If pods are stuck in Pending state, check node resources
+kubectl describe pods -n secure-apps | grep -A 10 "Events:"
+kubectl describe nodes | grep -A 5 "Allocated resources"
 ```{{exec}}
 
 ### 1.2 Verify Microservices Deployment
