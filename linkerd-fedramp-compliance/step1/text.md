@@ -36,6 +36,9 @@ linkerd check --pre
 Let's install Linkerd with security settings aligned with FedRAMP requirements:
 
 ```bash
+# Install step CLI for certificate generation
+apt install -y step
+
 # Generate a secure trust anchor certificate
 mkdir -p ~/linkerd-certs
 step certificate create root.linkerd.cluster.local ~/linkerd-certs/ca.crt ~/linkerd-certs/ca.key \
@@ -99,6 +102,9 @@ controllerResources:
     request: 50Mi
     limit: 250Mi
 EOF
+
+# Install Linkerd CRDs first
+linkerd install --crds | kubectl apply -f -
 
 # Install Linkerd with the created values
 linkerd install --values ~/linkerd-values.yaml | kubectl apply -f -
