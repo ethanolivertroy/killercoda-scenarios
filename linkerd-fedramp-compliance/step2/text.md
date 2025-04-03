@@ -203,9 +203,9 @@ kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend
 Let's create a Server resource and ServerAuthorization policy to restrict access to the backend service:
 
 ```bash
-# Create Server and ServerAuthorization resources - using multiple versions for compatibility
+# Create Server and ServerAuthorization resources - using appropriate formats for each API version
 cat << EOF | kubectl apply -f -
-apiVersion: policy.linkerd.io/v1beta1
+apiVersion: policy.linkerd.io/v1beta3
 kind: Server
 metadata:
   name: backend-server

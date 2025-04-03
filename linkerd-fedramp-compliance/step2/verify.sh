@@ -30,28 +30,38 @@ if ! kubectl get configmap backend-content -n secure-apps &>/dev/null; then
 fi
 
 # Check 4: Verify the Server resource exists (try both API versions for compatibility)
+echo "Checking for Server resource..."
 SERVER_EXISTS=false
 if kubectl get server.policy.linkerd.io backend-server -n secure-apps &>/dev/null; then
   SERVER_EXISTS=true
+  echo "✅ Found Server resource 'backend-server' (policy.linkerd.io API)"
 elif kubectl get server backend-server -n secure-apps &>/dev/null; then
   SERVER_EXISTS=true
+  echo "✅ Found Server resource 'backend-server' (core API)"
 fi
 
 if [ "$SERVER_EXISTS" = false ]; then
   echo "❌ The Server resource 'backend-server' is missing."
+  echo "Available Server CRDs:"
+  kubectl api-resources | grep -i server
   exit 1
 fi
 
 # Check 5: Verify the ServerAuthorization resource exists (try both API versions for compatibility)
+echo "Checking for ServerAuthorization resource..."
 AUTH_EXISTS=false
 if kubectl get serverauthorization.policy.linkerd.io backend-server-auth -n secure-apps &>/dev/null; then
   AUTH_EXISTS=true
+  echo "✅ Found ServerAuthorization resource 'backend-server-auth' (policy.linkerd.io API)"
 elif kubectl get serverauthorization backend-server-auth -n secure-apps &>/dev/null; then
   AUTH_EXISTS=true
+  echo "✅ Found ServerAuthorization resource 'backend-server-auth' (core API)"
 fi
 
 if [ "$AUTH_EXISTS" = false ]; then
   echo "❌ The ServerAuthorization resource 'backend-server-auth' is missing."
+  echo "Available ServerAuthorization CRDs:"
+  kubectl api-resources | grep -i authorization
   exit 1
 fi
 
