@@ -1,45 +1,74 @@
 #!/bin/bash
 
-# Check that the secure-apps namespace exists and is annotated for Linkerd
-if kubectl get namespace secure-apps &>/dev/null && kubectl get namespace secure-apps -o jsonpath='{.metadata.annotations.linkerd\.io/inject}' | grep -q enabled; then
-  # Check that the services are deployed and running
-  if kubectl get pods -n secure-apps -l app=frontend &>/dev/null && \
-     kubectl get pods -n secure-apps -l app=backend &>/dev/null && \
-     kubectl get pods -n secure-apps -o jsonpath='{.items[?(@.metadata.labels.app=="frontend")].status.phase}' | grep -q Running && \
-     kubectl get pods -n secure-apps -o jsonpath='{.items[?(@.metadata.labels.app=="backend")].status.phase}' | grep -q Running; then
-    
-    # Check that the backend-content ConfigMap exists
-    if kubectl get configmap backend-content -n secure-apps &>/dev/null; then
-      
-      # Check that the server and authorization policy exists
-      # Use multiple API versions to be more flexible
-      if (kubectl get server.policy.linkerd.io backend-server -n secure-apps &>/dev/null || kubectl get server backend-server -n secure-apps &>/dev/null) && \
-         (kubectl get serverauthorization.policy.linkerd.io backend-server-auth -n secure-apps &>/dev/null || kubectl get serverauthorization backend-server-auth -n secure-apps &>/dev/null); then
-        
-        # Get frontend pod name
-        FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}')
-        
-        # Try to access the backend service from the frontend pod - should return content
-        if kubectl exec $FRONTEND_POD -n secure-apps -c nginx -- curl -s -o /dev/null -w "%{http_code}" http://backend.secure-apps.svc.cluster.local | grep -q "200"; then
-          echo "Great! You've successfully implemented and tested mTLS and security policies in your Linkerd mesh."
-          exit 0
-        else
-          echo "The backend service is not responding correctly. Make sure the ConfigMap is mounted properly."
-          exit 1
-        fi
-      else
-        echo "Server or ServerAuthorization policies are missing. Please create both resources."
-        exit 1
-      fi
-    else
-      echo "Backend content ConfigMap is missing. Please create the ConfigMap for the backend service."
-      exit 1
-    fi
-  else
-    echo "Frontend or backend services are not running properly. Please check their deployment."
-    exit 1
-  fi
+# More resilient verification script
+echo "Verifying mTLS and security policies..."
+
+# Check 1: Verify the namespace exists and is annotated for Linkerd
+if ! kubectl get namespace secure-apps &>/dev/null; then
+  echo "❌ The secure-apps namespace doesn't exist. Please create it."
+  exit 1
+fi
+
+if ! kubectl get namespace secure-apps -o jsonpath='{.metadata.annotations.linkerd\.io/inject}' | grep -q enabled; then
+  echo "❌ The secure-apps namespace is not annotated for Linkerd injection."
+  exit 1
+fi
+
+# Check 2: Verify the deployments exist and are running
+FRONTEND_POD_COUNT=$(kubectl get pods -n secure-apps -l app=frontend --field-selector status.phase=Running 2>/dev/null | grep -c frontend || echo 0)
+BACKEND_POD_COUNT=$(kubectl get pods -n secure-apps -l app=backend --field-selector status.phase=Running 2>/dev/null | grep -c backend || echo 0)
+
+if [ "$FRONTEND_POD_COUNT" -eq 0 ] || [ "$BACKEND_POD_COUNT" -eq 0 ]; then
+  echo "❌ The frontend or backend pods are not running. Please check your deployments."
+  exit 1
+fi
+
+# Check 3: Verify ConfigMap exists
+if ! kubectl get configmap backend-content -n secure-apps &>/dev/null; then
+  echo "❌ The backend-content ConfigMap is missing."
+  exit 1
+fi
+
+# Check 4: Verify the Server resource exists (try both API versions for compatibility)
+SERVER_EXISTS=false
+if kubectl get server.policy.linkerd.io backend-server -n secure-apps &>/dev/null; then
+  SERVER_EXISTS=true
+elif kubectl get server backend-server -n secure-apps &>/dev/null; then
+  SERVER_EXISTS=true
+fi
+
+if [ "$SERVER_EXISTS" = false ]; then
+  echo "❌ The Server resource 'backend-server' is missing."
+  exit 1
+fi
+
+# Check 5: Verify the ServerAuthorization resource exists (try both API versions for compatibility)
+AUTH_EXISTS=false
+if kubectl get serverauthorization.policy.linkerd.io backend-server-auth -n secure-apps &>/dev/null; then
+  AUTH_EXISTS=true
+elif kubectl get serverauthorization backend-server-auth -n secure-apps &>/dev/null; then
+  AUTH_EXISTS=true
+fi
+
+if [ "$AUTH_EXISTS" = false ]; then
+  echo "❌ The ServerAuthorization resource 'backend-server-auth' is missing."
+  exit 1
+fi
+
+# Check 6: Test connectivity from frontend to backend
+echo "Testing authorized service connectivity..."
+FRONTEND_POD=$(kubectl get pod -n secure-apps -l app=frontend -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+
+# Install curl if needed
+kubectl exec -n secure-apps $FRONTEND_POD -c nginx -- which curl &>/dev/null || kubectl exec -n secure-apps $FRONTEND_POD -c nginx -- apk add --no-cache curl &>/dev/null
+
+# Test connectivity
+HTTP_STATUS=$(kubectl exec -n secure-apps $FRONTEND_POD -c nginx -- curl -s -o /dev/null -w "%{http_code}" http://backend.secure-apps.svc.cluster.local --max-time 10 2>/dev/null || echo "000")
+
+if [ "$HTTP_STATUS" = "200" ]; then
+  echo "✅ Great! You've successfully implemented and tested mTLS and security policies in your Linkerd mesh."
+  exit 0
 else
-  echo "The secure-apps namespace is not properly configured. Please create and annotate it."
+  echo "❌ The frontend pod cannot access the backend service. Please check your network policies and service configuration."
   exit 1
 fi
