@@ -111,7 +111,7 @@ kubectl create namespace secure-apps
 kubectl annotate namespace secure-apps linkerd.io/inject=enabled
 
 # Verify the namespace annotation
-kubectl get namespace secure-apps --show-labels -o json | jq .metadata.annotations
+kubectl get namespace secure-apps -o jsonpath='{.metadata.annotations}'
 ```{{exec}}
 
 ## Task 5: Deploy Network Policies for Added Security
