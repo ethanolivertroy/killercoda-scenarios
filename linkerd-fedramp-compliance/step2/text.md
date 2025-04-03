@@ -203,7 +203,8 @@ kubectl exec -it $FRONTEND_POD -n secure-apps -c nginx -- curl -s http://backend
 Let's create a Server resource and ServerAuthorization policy to restrict access to the backend service:
 
 ```bash
-# Create Server and ServerAuthorization resources - using appropriate formats for each API version
+# Create Server and ServerAuthorization resources using the recommended API versions
+# First, create the Server
 cat << EOF | kubectl apply -f -
 apiVersion: policy.linkerd.io/v1beta3
 kind: Server
@@ -216,16 +217,20 @@ spec:
       app: backend
   port: 80
   proxyProtocol: HTTP/1
----
+EOF
+
+# Check which API version of ServerAuthorization is supported
+echo "Checking supported ServerAuthorization API version..."
+if kubectl api-resources | grep -q serverauthorizations.policy.linkerd.io ; then
+  echo "Using ServerAuthorization v1beta1 API format"
+  cat << EOF | kubectl apply -f -
 apiVersion: policy.linkerd.io/v1beta1
 kind: ServerAuthorization
 metadata:
   name: backend-server-auth
   namespace: secure-apps
 spec:
-  server:
-    name: backend-server
-    namespace: secure-apps
+  server: backend-server
   client:
     # Only allow frontend service account
     unauthenticated: false
@@ -234,6 +239,25 @@ spec:
         - name: frontend
           namespace: secure-apps
 EOF
+else
+  echo "Using older ServerAuthorization API format"
+  cat << EOF | kubectl apply -f -
+apiVersion: policy.linkerd.io/v1alpha1
+kind: ServerAuthorization
+metadata:
+  name: backend-server-auth
+  namespace: secure-apps
+spec:
+  server: backend-server
+  client:
+    # Only allow frontend service account
+    unauthenticated: false
+    meshTLS:
+      serviceAccounts:
+        - name: frontend
+          namespace: secure-apps
+EOF
+fi
 ```{{exec}}
 
 Verify that our Server and ServerAuthorization resources were created:
