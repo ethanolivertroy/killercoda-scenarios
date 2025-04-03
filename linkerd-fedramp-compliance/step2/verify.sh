@@ -6,9 +6,9 @@ if ! kubectl get deployments -n linkerd linkerd-policy-controller &>/dev/null; t
   exit 1
 fi
 
-# Check if sample applications are deployed - only check if the deployments exist, not if pods are running
-if ! kubectl get deployment frontend -n secure-apps &>/dev/null || ! kubectl get deployment backend -n secure-apps &>/dev/null || ! kubectl get deployment database -n secure-apps &>/dev/null; then
-  echo "Sample microservices are not deployed. Please complete the step."
+# Check if service accounts exist (we're not deploying actual apps)
+if ! kubectl get serviceaccount frontend -n secure-apps &>/dev/null || ! kubectl get serviceaccount backend -n secure-apps &>/dev/null || ! kubectl get serviceaccount database -n secure-apps &>/dev/null; then
+  echo "Service accounts are not created. Please complete the step."
   exit 1
 fi
 
@@ -24,6 +24,6 @@ if ! kubectl get server -n secure-apps &>/dev/null; then
   exit 1
 fi
 
-# Success - we don't verify if pods are actually running since they might be pending due to resource constraints
-echo "Step 2 completed successfully! Even if pods are in Pending state due to resource constraints, your configurations are correct."
+# Success
+echo "Step 2 completed successfully! You've correctly configured Linkerd's authentication controls."
 exit 0
