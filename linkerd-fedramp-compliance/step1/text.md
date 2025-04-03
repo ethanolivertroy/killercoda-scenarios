@@ -36,78 +36,28 @@ linkerd check --pre
 Let's install Linkerd with security settings aligned with FedRAMP requirements:
 
 ```bash
-# Install step CLI for certificate generation
-apt install -y step
-
-# Generate a secure trust anchor certificate
-mkdir -p ~/linkerd-certs
-step certificate create root.linkerd.cluster.local ~/linkerd-certs/ca.crt ~/linkerd-certs/ca.key \
-  --profile root-ca --no-password --insecure --not-after 8760h
-
-# Generate issuer certificates
-step certificate create identity.linkerd.cluster.local ~/linkerd-certs/issuer.crt ~/linkerd-certs/issuer.key \
-  --profile intermediate-ca --not-after 8760h --no-password --insecure \
-  --ca ~/linkerd-certs/ca.crt --ca-key ~/linkerd-certs/ca.key
-
-# Create Values File
-cat > ~/linkerd-values.yaml << EOF
-identity:
-  issuer:
-    scheme: kubernetes.io/tls
-    tls:
-      crtPEM: |
-$(cat ~/linkerd-certs/issuer.crt | sed 's/^/        /')
-      keyPEM: |
-$(cat ~/linkerd-certs/issuer.key | sed 's/^/        /')
-  # Configure trust roots
-  externalCA: true
-  trustAnchorsPEM: |
-$(cat ~/linkerd-certs/ca.crt | sed 's/^/    /')
-
-# Set proxyInit to run as root
-proxyInit:
-  resources:
-    cpu:
-      request: 100m
-      limit: 100m
-    memory:
-      request: 50Mi
-      limit: 50Mi
-  # SECURITY CONTROL: The proxy init container needs to run as root 
-  # to modify iptables rules. this is a required exception to the
-  # general rule of not running as root/privileged. 
-  runAsRoot: true
-
-# Set resource limits (resource management required by FedRAMP)
-proxy:
-  resources:
-    cpu:
-      request: 100m
-      limit: 1000m
-    memory:
-      request: 20Mi
-      limit: 250Mi
-  # Enable admin server for monitoring 
-  # (monitoring/auditing required by FedRAMP AU-2, AU-12)
-  enableExternalProfiles: true
-  logLevel: info
-  logFormat: json
-
-# Set resource limits for the control plane components
-controllerResources:
-  cpu:
-    request: 100m
-    limit: 1000m
-  memory:
-    request: 50Mi
-    limit: 250Mi
-EOF
-
 # Install Linkerd CRDs first
 linkerd install --crds | kubectl apply -f -
 
-# Install Linkerd with the created values
-linkerd install --values ~/linkerd-values.yaml | kubectl apply -f -
+# Install Linkerd with FedRAMP-compliant default settings
+# This avoids certificate generation issues and simplifies the installation
+linkerd install \
+  --set proxyInit.runAsRoot=true \
+  --set proxyInit.resources.cpu.request=100m \
+  --set proxyInit.resources.cpu.limit=100m \
+  --set proxyInit.resources.memory.request=50Mi \
+  --set proxyInit.resources.memory.limit=50Mi \
+  --set proxy.resources.cpu.request=100m \
+  --set proxy.resources.cpu.limit=1000m \
+  --set proxy.resources.memory.request=20Mi \
+  --set proxy.resources.memory.limit=250Mi \
+  --set proxy.enableExternalProfiles=true \
+  --set proxy.logLevel=info \
+  --set proxy.logFormat=json \
+  --set controllerResources.cpu.request=100m \
+  --set controllerResources.cpu.limit=1000m \
+  --set controllerResources.memory.request=50Mi \
+  --set controllerResources.memory.limit=250Mi | kubectl apply -f -
 ```{{exec}}
 
 ## Task 2: Install Visualization for Monitoring
