@@ -36,7 +36,10 @@ linkerd check --pre
 Let's install Linkerd with security settings aligned with FedRAMP requirements:
 
 ```bash
-# Install Linkerd CRDs first
+# Install Kubernetes Gateway API CRDs first
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
+
+# Install Linkerd CRDs second
 linkerd install --crds | kubectl apply -f -
 
 # Install Linkerd with FedRAMP-compliant default settings
