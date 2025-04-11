@@ -1,32 +1,49 @@
 # Implementing Kyverno Policies for FedRAMP Controls
 
 In this step, we will:
-1. Install Kyverno in our Kubernetes cluster
-2. Understand Kyverno's architecture and how it differs from OPA Gatekeeper
+1. Install a minimal Kyverno configuration in our Kubernetes cluster
+2. Understand Kyverno's architecture and how it provides lightweight policy enforcement
 3. Create policies that implement key FedRAMP controls
 4. Test our policies with compliant and non-compliant resources
 
-> **Note:** Like Gatekeeper, Kyverno also requires resources. We've selected a stable version and modified the verification steps to allow you to proceed as long as the key components are installed, even if some pods are not fully ready.
+> **Note:** We'll be using a highly optimized minimal Kyverno installation to reduce resource usage while still providing policy enforcement capabilities.
 
-## Installing Kyverno
+## Installing Minimal Kyverno
 
-Let's install Kyverno directly with YAML manifests:
+Let's install a lightweight Kyverno configuration using Helm with customized values:
 
 ```
 # Create namespace
 kubectl create namespace kyverno
-
-# Install Kyverno v1.10.0 (a stable version)
-kubectl apply -f https://raw.githubusercontent.com/kyverno/kyverno/v1.10.0/config/release/install.yaml
 ```{{exec}}
 
-Wait for Kyverno to be fully deployed (this may take a few minutes):
+Now let's install Kyverno with minimized resource usage:
 
 ```
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=kyverno -n kyverno --timeout=300s
+# Add Kyverno Helm repo
+helm repo add kyverno https://kyverno.github.io/kyverno/
+helm repo update
+
+# Install Kyverno with minimal configuration
+helm install kyverno kyverno/kyverno -n kyverno \
+  --set replicaCount=1 \
+  --set resources.limits.cpu=100m \
+  --set resources.limits.memory=256Mi \
+  --set resources.requests.cpu=50m \
+  --set resources.requests.memory=128Mi \
+  --set backgroundController.enabled=false
 ```{{exec}}
 
-> **Note:** If the above command times out, you can check the pod status manually with `kubectl get pods -n kyverno` and proceed once the pods are in the Running state.
+This configuration:
+- Uses a single replica instead of multiple
+- Sets tight resource limits
+- Disables the background controller to reduce resource usage
+
+Let's verify Kyverno is being deployed:
+
+```
+kubectl get pods -n kyverno
+```{{exec}}
 
 ## Understanding Kyverno Architecture
 

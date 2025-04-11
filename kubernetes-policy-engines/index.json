@@ -1,18 +1,18 @@
 {
-  "title": "Kubernetes Policy Engines for FedRAMP Compliance",
-  "description": "Learn how to implement and audit Kubernetes policy engines (OPA Gatekeeper and Kyverno) to enforce FedRAMP security controls",
+  "title": "Lightweight Kubernetes Policy Enforcement for FedRAMP Compliance",
+  "description": "Learn how to implement and audit lightweight Kubernetes policy enforcement mechanisms for FedRAMP security controls",
   "details": {
     "intro": {
       "text": "intro.md"
     },
     "steps": [
       {
-        "title": "Implementing OPA Gatekeeper Policies for FedRAMP Controls",
+        "title": "Implementing ValidatingAdmissionPolicy for FedRAMP Controls",
         "text": "step1/text.md",
         "verify": "step1/verify.sh"
       },
       {
-        "title": "Implementing Kyverno Policies for FedRAMP Controls",
+        "title": "Implementing Lightweight Kyverno Configuration for FedRAMP Controls",
         "text": "step2/text.md",
         "verify": "step2/verify.sh"
       },

@@ -11,8 +11,13 @@ In this step, we will:
 Let's begin by examining the current state of our policies and how they're enforcing FedRAMP controls:
 
 ```
-# Check OPA Gatekeeper constraints
-kubectl get constraints
+# Check ValidatingAdmissionPolicies
+kubectl get validatingadmissionpolicies
+```{{exec}}
+
+```
+# Check ValidatingAdmissionPolicyBindings
+kubectl get validatingadmissionpolicybindings
 ```{{exec}}
 
 ```
@@ -68,12 +73,12 @@ For FedRAMP authorization, you'll need to generate evidence of policy enforcemen
 # Create a report directory
 mkdir -p ~/fedramp-evidence/policy-enforcement
 
-# Generate OPA Gatekeeper report
-kubectl get constraint --all-namespaces -o yaml > ~/fedramp-evidence/policy-enforcement/gatekeeper-constraints.yaml
+# Generate ValidatingAdmissionPolicy report
+kubectl get validatingadmissionpolicies -o yaml > ~/fedramp-evidence/policy-enforcement/admission-policies.yaml
+kubectl get validatingadmissionpolicybindings -o yaml > ~/fedramp-evidence/policy-enforcement/admission-policy-bindings.yaml
 
 # Generate Kyverno report
 kubectl get cpol --all-namespaces -o yaml > ~/fedramp-evidence/policy-enforcement/kyverno-policies.yaml
-kubectl get policyreport --all-namespaces -o yaml > ~/fedramp-evidence/policy-enforcement/kyverno-policyreports.yaml
 
 # Generate a summary report
 cat << EOF > ~/fedramp-evidence/policy-enforcement/summary.md
@@ -82,9 +87,9 @@ cat << EOF > ~/fedramp-evidence/policy-enforcement/summary.md
 ## Overview
 This document summarizes the policy enforcement in place to support FedRAMP compliance in the Kubernetes environment.
 
-## Policy Engines Implemented
-1. OPA Gatekeeper
-2. Kyverno
+## Policy Enforcement Mechanisms Implemented
+1. Kubernetes ValidatingAdmissionPolicy
+2. Lightweight Kyverno
 
 ## Key Controls Enforced
 1. Component Inventory Management (CM-8)
@@ -98,9 +103,9 @@ This document summarizes the policy enforcement in place to support FedRAMP comp
 - Continuous monitoring is in place to detect policy violations
 
 ## Evidence Files
-- gatekeeper-constraints.yaml: Current OPA Gatekeeper constraints and status
-- kyverno-policies.yaml: Current Kyverno policies in place
-- kyverno-policyreports.yaml: Audit results from Kyverno policy enforcement
+- admission-policies.yaml: Current ValidatingAdmissionPolicies in place
+- admission-policy-bindings.yaml: Current policy bindings and their configurations
+- kyverno-policies.yaml: Current lightweight Kyverno policies in place
 
 This evidence supports FedRAMP authorization by demonstrating automated enforcement of security controls.
 EOF

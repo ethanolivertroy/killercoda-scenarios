@@ -1,15 +1,15 @@
-# Kubernetes Policy Engines for FedRAMP Compliance
+# Kubernetes Policy Enforcement for FedRAMP Compliance
 
 ## Introduction
 
-In the context of FedRAMP compliance, Kubernetes environments must implement numerous security controls defined in NIST 800-53. Policy engines provide a powerful way to enforce these controls systematically through "policy as code" - defining security requirements as code that is automatically enforced.
+In the context of FedRAMP compliance, Kubernetes environments must implement numerous security controls defined in NIST 800-53. Policy enforcement provides a powerful way to automate these controls through "policy as code" - defining security requirements as code that is automatically enforced.
 
-This scenario focuses on two leading Kubernetes policy engines:
+This scenario focuses on lightweight policy enforcement mechanisms:
 
-1. **OPA Gatekeeper**: An extensible policy engine that uses the Rego language for defining constraints
-2. **Kyverno**: A Kubernetes-native policy engine that uses YAML for defining policies
+1. **ValidatingAdmissionPolicy**: A Kubernetes native feature that uses Common Expression Language (CEL) for policy validation
+2. **Minimal Kyverno**: A resource-optimized deployment of Kyverno, a Kubernetes-native policy engine
 
-Both tools integrate with Kubernetes admission controllers to enforce policies at the time of resource creation or modification, implementing preventative controls that ensure resources cannot be deployed unless they meet security requirements.
+Both approaches integrate with Kubernetes admission control to enforce policies at the time of resource creation or modification, implementing preventative controls with minimal resource overhead.
 
 ## Environment Preparation
 
@@ -20,9 +20,9 @@ Before we begin, let's ensure our environment is ready:
 ssh node01 "echo '3' > /proc/sys/vm/drop_caches"
 ```{{exec}}
 
-This command helps free up memory on the worker node, which can prevent resource-related issues when installing our policy engines.
+This command helps free up memory on the worker node, which can prevent resource-related issues during the scenario.
 
-> **Note:** If at any point you experience resource issues (like ImagePullBackOff errors), you can run the provided cleanup helper script:
+> **Note:** If at any point you experience resource issues, you can run the provided cleanup helper script:
 > ```
 > bash /root/cleanup-helper.sh
 > ```
@@ -30,7 +30,7 @@ This command helps free up memory on the worker node, which can prevent resource
 
 ## FedRAMP Relevance
 
-Policy engines help implement several key FedRAMP control families:
+Policy enforcement helps implement several key FedRAMP control families:
 
 - **Access Control (AC)**: Enforce least privilege and separation of duties
 - **Configuration Management (CM)**: Ensure baseline configurations are maintained
@@ -41,11 +41,11 @@ Policy engines help implement several key FedRAMP control families:
 
 By the end of this scenario, you will be able to:
 
-1. Install and configure OPA Gatekeeper in a Kubernetes cluster
-2. Implement policies that enforce FedRAMP security controls using Gatekeeper constraints
-3. Install and configure Kyverno in a Kubernetes cluster
-4. Implement equivalent policies using Kyverno's YAML-based approach
-5. Audit policy enforcement and generate documentation for FedRAMP compliance evidence
-6. Compare the two approaches and understand their relative strengths
+1. Use Kubernetes ValidatingAdmissionPolicies to implement FedRAMP security controls
+2. Understand how CEL expressions can define policy validation rules
+3. Install and configure a minimal Kyverno deployment to optimize resource usage
+4. Implement lightweight policies for enforcing FedRAMP controls
+5. Audit policy enforcement and generate documentation for FedRAMP compliance evidence 
+6. Compare the different approaches and understand their resource efficiency
 
-Let's begin by setting up OPA Gatekeeper and implementing our first set of policies!
+Let's begin by implementing ValidatingAdmissionPolicies for key FedRAMP controls!

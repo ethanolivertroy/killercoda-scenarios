@@ -1,197 +1,173 @@
-# Implementing OPA Gatekeeper Policies for FedRAMP Controls
+# Implementing Policies for FedRAMP Controls with Kubernetes Native Admission
 
 In this step, we will:
-1. Install OPA Gatekeeper in our Kubernetes cluster
-2. Understand Gatekeeper's architecture and how it implements policy enforcement
-3. Create constraint templates for key FedRAMP controls
-4. Apply constraints based on these templates
+1. Learn about Kubernetes ValidatingAdmissionPolicies - a more lightweight alternative
+2. Create admission policies for key FedRAMP controls
+3. Apply policy bindings to enforce our security requirements
 
-> **Note:** OPA Gatekeeper requires significant resources. If you encounter pod status issues like `ImagePullBackOff` or `Pending`, don't worry - we've modified the verification steps to still allow you to proceed with the scenario as long as the key components are installed.
+> **Note:** We're using Kubernetes native ValidatingAdmissionPolicy (beta feature) instead of OPA Gatekeeper for a more lightweight approach with fewer resource requirements.
 
-## Installing OPA Gatekeeper
+## Understanding ValidatingAdmissionPolicy
 
-First, let's install OPA Gatekeeper using a stable version (instead of beta/master):
+ValidatingAdmissionPolicy is a Kubernetes feature that provides policy enforcement without requiring additional controllers or webhooks. It uses Common Expression Language (CEL) for validation rules.
+
+Let's check if the feature is enabled in our cluster:
 
 ```
-kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/release-3.11/deploy/gatekeeper.yaml
+kubectl api-resources | grep validatingadmissionpolicy
 ```{{exec}}
 
-Wait for Gatekeeper to be fully deployed (this may take a few minutes):
+If this returns resources, the feature is enabled. Let's verify our Kubernetes version:
 
 ```
-kubectl wait --for=condition=ready pod -l control-plane=controller-manager -n gatekeeper-system --timeout=300s
+kubectl version --short
 ```{{exec}}
 
-> **Note:** If the above command times out, you can check the pod status manually with `kubectl get pods -n gatekeeper-system` and proceed once the pods are in the Running state.
+## Creating ValidatingAdmissionPolicies
 
-## Understanding Gatekeeper Architecture
+Now let's create policies for key FedRAMP controls using the ValidatingAdmissionPolicy resource. We'll implement the same security controls that traditional policy engines enforce, but using Kubernetes native capabilities.
 
-OPA Gatekeeper works as a validating webhook in Kubernetes that intercepts API requests and checks them against defined policies. The key components are:
-
-1. **Constraint Templates**: Define the schema and Rego code for a type of policy
-2. **Constraints**: Actual policy instances based on templates, applied to specific resources
-
-Let's check that Gatekeeper is properly installed:
-
-```
-kubectl get pods -n gatekeeper-system
-```{{exec}}
-
-## Creating Constraint Templates for FedRAMP Controls
-
-We'll create constraint templates that address key FedRAMP control families. Each template will include:
-- Parameters for configuration
-- Rego code that implements the policy logic
-- Clear violation messages for audit purposes
-
-Let's examine our first template for required security labels (maps to CM-8):
-
-```
-cat /root/opa-constraints.yaml
-```{{exec}}
-
-Now, let's apply these constraint templates:
-
-```
-kubectl apply -f /root/opa-constraints.yaml
-```{{exec}}
-
-Verify that the templates were created:
-
-```
-kubectl get constrainttemplates
-```{{exec}}
-
-## Implementing FedRAMP Controls with Constraints
-
-Now we'll create constraints based on our templates. Each constraint will:
-1. Reference a constraint template
-2. Define the scope (which resources it applies to)
-3. Set parameters specific to our security requirements
-
-Let's create constraints for:
-
-1. **Required Labels** (CM-8: Information System Component Inventory)
-```yaml
-apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sRequiredLabels
-metadata:
-  name: require-security-labels
-spec:
-  match:
-    kinds:
-      - apiGroups: [""]
-        kinds: ["Pod", "Deployment", "StatefulSet", "DaemonSet"]
-  parameters:
-    labels:
-      - key: "app.kubernetes.io/name"
-      - key: "security-classification"
-      - key: "owner"
-```
-
-2. **Privileged Container Prevention** (AC-6: Least Privilege)
-```yaml
-apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sBlockPrivilegedContainers
-metadata:
-  name: prevent-privileged-containers
-spec:
-  match:
-    kinds:
-      - apiGroups: [""]
-        kinds: ["Pod"]
-```
-
-3. **Allowed Repositories** (CM-7: Least Functionality)
-```yaml
-apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sAllowedRepos
-metadata:
-  name: allowed-image-repos
-spec:
-  match:
-    kinds:
-      - apiGroups: [""]
-        kinds: ["Pod"]
-  parameters:
-    repos:
-      - "gcr.io/my-fedramp-project/"
-      - "registry.internal.fedramp.gov/"
-      - "k8s.gcr.io/"
-      - "docker.io/bitnami/"
-```
-
-4. **Resource Limits** (SC-6: Resource Availability)
-```yaml
-apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sRequiredResources
-metadata:
-  name: require-resource-limits
-spec:
-  match:
-    kinds:
-      - apiGroups: [""]
-        kinds: ["Pod"]
-  parameters:
-    resources: ["limits.cpu", "limits.memory"]
-```
-
-Let's apply these constraints:
+Let's create our first policy for required security labels (maps to CM-8):
 
 ```
 cat <<EOF | kubectl apply -f -
-apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sRequiredLabels
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingAdmissionPolicy
 metadata:
   name: require-security-labels
 spec:
-  match:
-    kinds:
-      - apiGroups: [""]
-        kinds: ["Pod", "Deployment", "StatefulSet", "DaemonSet"]
-  parameters:
-    labels:
-      - key: "app.kubernetes.io/name"
-      - key: "security-classification"
-      - key: "owner"
----
-apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sBlockPrivilegedContainers
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["pods"]
+    - apiGroups: ["apps"]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["deployments", "statefulsets", "daemonsets"] 
+  validations:
+    - expression: "has(object.metadata.labels) && has(object.metadata.labels['app.kubernetes.io/name'])"
+      message: "Label 'app.kubernetes.io/name' is required"
+    - expression: "has(object.metadata.labels) && has(object.metadata.labels['security-classification'])"
+      message: "Label 'security-classification' is required"
+    - expression: "has(object.metadata.labels) && has(object.metadata.labels['owner'])"
+      message: "Label 'owner' is required"
+EOF
+```{{exec}}
+
+Now, let's create a policy to block privileged containers (maps to AC-6):
+
+```
+cat <<EOF | kubectl apply -f -
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingAdmissionPolicy
 metadata:
-  name: prevent-privileged-containers
+  name: block-privileged-containers
 spec:
-  match:
-    kinds:
-      - apiGroups: [""]
-        kinds: ["Pod"]
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["pods"]
+  validations:
+    - expression: "!has(object.spec.containers[0].securityContext) || !has(object.spec.containers[0].securityContext.privileged) || object.spec.containers[0].securityContext.privileged == false"
+      message: "Privileged containers are not allowed"
+EOF
+```{{exec}}
+
+Let's verify that our admission policies are created:
+
+```
+kubectl get validatingadmissionpolicies
+```{{exec}}
+
+## Creating Policy Bindings
+
+For our policies to take effect, we need to create bindings that connect them to our cluster. Let's create bindings for our policies:
+
+```
+cat <<EOF | kubectl apply -f -
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: require-security-labels-binding
+spec:
+  policyName: require-security-labels
+  validationActions: ["Deny"]
 ---
-apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sAllowedRepos
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: block-privileged-containers-binding
+spec:
+  policyName: block-privileged-containers
+  validationActions: ["Deny"]
+EOF
+```{{exec}}
+
+Now let's create two more policies for allowed repositories and resource limits:
+
+```
+cat <<EOF | kubectl apply -f -
+# Allowed Repositories (CM-7: Least Functionality)
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingAdmissionPolicy
 metadata:
   name: allowed-image-repos
 spec:
-  match:
-    kinds:
-      - apiGroups: [""]
-        kinds: ["Pod"]
-  parameters:
-    repos:
-      - "gcr.io/my-fedramp-project/"
-      - "registry.internal.fedramp.gov/"
-      - "k8s.gcr.io/"
-      - "docker.io/bitnami/"
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["pods"]
+  validations:
+    - expression: "object.spec.containers.all(c, c.image.startsWith('gcr.io/my-fedramp-project/') || c.image.startsWith('registry.internal.fedramp.gov/') || c.image.startsWith('k8s.gcr.io/') || c.image.startsWith('docker.io/bitnami/'))"
+      message: "Container images must come from an approved repository"
 ---
-apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sRequiredResources
+# Resource Limits (SC-6: Resource Availability)
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingAdmissionPolicy
 metadata:
   name: require-resource-limits
 spec:
-  match:
-    kinds:
-      - apiGroups: [""]
-        kinds: ["Pod"]
-  parameters:
-    resources: ["limits.cpu", "limits.memory"]
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["pods"]
+  validations:
+    - expression: "object.spec.containers.all(c, has(c.resources) && has(c.resources.limits) && has(c.resources.limits.cpu) && has(c.resources.limits.memory))"
+      message: "All containers must have CPU and memory limits defined"
+EOF
+```{{exec}}
+
+And create bindings for these policies:
+
+```
+cat <<EOF | kubectl apply -f -
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: allowed-image-repos-binding
+spec:
+  policyName: allowed-image-repos
+  validationActions: ["Deny"]
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: require-resource-limits-binding
+spec:
+  policyName: require-resource-limits
+  validationActions: ["Deny"]
 EOF
 ```{{exec}}
 
@@ -240,18 +216,27 @@ spec:
 EOF
 ```{{exec}}
 
-Let's examine our constraints and any violations:
-
-```
-kubectl get constraints
-```{{exec}}
-
 ## Monitoring and Auditing
 
-We can examine audit results to see resources that were created before our policies or were exempted:
+We can examine our policy enforcement by checking the validation admission policies:
 
 ```
-kubectl get k8srequiredlabels.constraints.gatekeeper.sh/require-security-labels -o yaml
+kubectl get validatingadmissionpolicies -o wide
 ```{{exec}}
 
-This completes our implementation of OPA Gatekeeper policies for key FedRAMP controls. In the next step, we'll implement equivalent policies using Kyverno.
+And verify the bindings:
+
+```
+kubectl get validatingadmissionpolicybindings
+```{{exec}}
+
+## Advantages of Using ValidatingAdmissionPolicy
+
+This native Kubernetes approach provides several advantages:
+
+1. **Lightweight**: No additional controllers or webhooks required
+2. **Performance**: CEL expressions are evaluated in-process with lower overhead
+3. **Resource Efficient**: Minimal resource consumption compared to external policy engines
+4. **Native Integration**: Built directly into the Kubernetes API server
+
+This completes our implementation of ValidatingAdmissionPolicy for key FedRAMP controls. In the next step, we'll explore a more Kubernetes-native policy approach with Kyverno.
