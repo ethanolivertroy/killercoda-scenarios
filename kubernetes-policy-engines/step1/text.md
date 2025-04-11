@@ -111,10 +111,13 @@ spec:
 EOF
 ```{{exec}}
 
-Let's verify the templates were created:
+Let's verify the templates were created and wait for them to be properly established:
 
 ```
 kubectl get constrainttemplates
+# Wait a moment for the CRDs to be fully established
+echo "Waiting for ConstraintTemplates to be fully established..."
+sleep 10
 ```{{exec}}
 
 ## Creating FedRAMP-Compliant Constraints

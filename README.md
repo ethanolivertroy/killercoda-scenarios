@@ -69,7 +69,9 @@ This scenario teaches how to implement and audit Kubernetes policy engines (OPA 
 
 [Run This Scenario](https://killercoda.com/ethanolivertroy/scenario/kubernetes-policy-engines)
 
-**Note for instructors**: If you encounter a webhook configuration error during OPA Gatekeeper installation, check that the resources list in the ValidatingWebhookConfiguration doesn't contain both '*' and specific resource names. The current version has been fixed to use only '*'.
+**Notes for instructors**: 
+- If you encounter a webhook configuration error during OPA Gatekeeper installation, check that the resources list in the ValidatingWebhookConfiguration doesn't contain both '*' and specific resource names. The current version has been fixed to use only '*'.
+- When creating Constraints, ensure that the corresponding ConstraintTemplates are fully established first. We've added a 10-second sleep between template creation and constraint application to address this.
 
 ### 5. AWS FedRAMP Compliance Assessment with LocalStack
 
