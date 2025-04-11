@@ -19,9 +19,9 @@ if [ ! -f /tmp/lambda_function.zip ]; then
   exit 1
 fi
 
-# Check if test file exists
-if [ ! -f /tmp/lambda_function.py ]; then
-  echo "Lambda function source file not found at /tmp/lambda_function.py"
+# Check if either Lambda function source file exists
+if [ ! -f /tmp/lambda_function.py ] && [ ! -f /tmp/simple_lambda.py ]; then
+  echo "No Lambda function source files found at /tmp/"
   exit 1
 fi
 

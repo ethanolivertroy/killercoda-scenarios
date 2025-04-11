@@ -63,6 +63,12 @@ def handler(event, context):
     return response
 EOF
 
+# Create a simplified Lambda function that works better with LocalStack
+cat > /tmp/simple_lambda.py << EOF
+def handler(event, context):
+    return {"message": "Hello from Lambda!"}
+EOF
+
 # Create a basic IAM role policy for Lambda
 cat > /tmp/lambda-trust-policy.json << EOF
 {
@@ -78,6 +84,9 @@ cat > /tmp/lambda-trust-policy.json << EOF
   ]
 }
 EOF
+
+# Pre-create the zip file for convenience
+cd /tmp && zip -r lambda_function.zip simple_lambda.py && cd -
 
 # Create helpful scripts for common tasks
 cat > /root/create-lambda-package.sh << EOF

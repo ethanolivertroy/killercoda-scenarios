@@ -28,23 +28,35 @@ cd ~
 ```{{exec}}
 
 ```
-# Create an IAM role for Lambda
-aws iam create-role \
+# Create an IAM role for Lambda (simplified for LocalStack)
+ROLE_RESPONSE=$(aws iam create-role \
   --role-name lambda-role \
-  --assume-role-policy-document file:///tmp/lambda-trust-policy.json
+  --assume-role-policy-document file:///tmp/lambda-trust-policy.json)
 
-# Attach a basic execution policy to the role
-aws iam attach-role-policy \
-  --role-name lambda-role \
-  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+# Get the role ARN
+ROLE_ARN=$(echo $ROLE_RESPONSE | jq -r .Role.Arn)
+echo "Created role with ARN: $ROLE_ARN"
 
-# Create the Lambda function
+# Wait a moment for the role to be available
+sleep 2
+
+# Create a simpler Lambda function for LocalStack compatibility
+cat <<EOF > /tmp/simple_lambda.py
+def handler(event, context):
+    return {"message": "Hello from Lambda!"}
+EOF
+
+# Create a fresh zip file with the simple function
+cd /tmp && rm -f lambda_function.zip && zip lambda_function.zip simple_lambda.py
+cd ~
+
+# Create the Lambda function with minimal settings for LocalStack
 aws lambda create-function \
   --function-name my-test-function \
-  --runtime python3.9 \
-  --handler lambda_function.handler \
+  --runtime python3.8 \
+  --handler simple_lambda.handler \
   --zip-file fileb:///tmp/lambda_function.zip \
-  --role arn:aws:iam::000000000000:role/lambda-role
+  --role $ROLE_ARN
 ```{{exec}}
 
 ```
@@ -53,14 +65,25 @@ aws lambda list-functions
 ```{{exec}}
 
 ```
+# Wait a moment for the function to be available
+echo "Waiting for Lambda function to be ready..."
+sleep 3
+
 # Invoke the Lambda function
 aws lambda invoke \
   --function-name my-test-function \
   --payload '{"key": "value"}' \
+  --cli-binary-format raw-in-base64-out \
   /tmp/lambda-output.json
 
-# See the output
-cat /tmp/lambda-output.json
+# See the output (if successful)
+if [ -f /tmp/lambda-output.json ]; then
+  echo "Lambda function output:"
+  cat /tmp/lambda-output.json
+else
+  echo "Invocation didn't produce output file. Checking function status:"
+  aws lambda get-function --function-name my-test-function
+fi
 ```{{exec}}
 
 ## SNS and SQS for Messaging
