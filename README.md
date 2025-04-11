@@ -73,22 +73,21 @@ This scenario teaches how to implement and audit Kubernetes policy engines (OPA 
 - If you encounter a webhook configuration error during OPA Gatekeeper installation, check that the resources list in the ValidatingWebhookConfiguration doesn't contain both '*' and specific resource names. The current version has been fixed to use only '*'.
 - When creating Constraints, ensure that the corresponding ConstraintTemplates are fully established first. We've added a 10-second sleep between template creation and constraint application to address this.
 
-### 5. AWS FedRAMP Compliance Assessment with LocalStack
+### 5. AWS CLI Sandbox with LocalStack
 
-![AWS](https://img.shields.io/badge/AWS-Cloud-FF9900)
+![AWS](https://img.shields.io/badge/AWS-CLI-FF9900)
 ![LocalStack](https://img.shields.io/badge/LocalStack-Testing-4D27AA)
-![FedRAMP Compliance](https://img.shields.io/badge/FedRAMP-Compliance-0078D6)
-![NIST Standards](https://img.shields.io/badge/NIST-800--53-00BFFF)
+![Cloud](https://img.shields.io/badge/Cloud-Sandbox-0078D6)
 
-This scenario teaches how to evaluate AWS environments for FedRAMP compliance using LocalStack, a cloud service emulator that runs in a single container.
+This scenario provides a sandbox environment to practice AWS CLI commands using LocalStack, a cloud service emulator that runs in a single container, without incurring AWS costs.
 
 **What You'll Learn:**
-- How to set up a simulated AWS environment for FedRAMP compliance testing
-- How to deploy and evaluate AWS resources against key FedRAMP controls
-- How to assess IAM configurations, S3 bucket security, and CloudTrail logging
-- How to generate compliance reports and remediate security issues
+- How to set up and use LocalStack to simulate AWS services locally
+- How to work with basic AWS CLI commands for S3, IAM, and DynamoDB
+- How to explore advanced AWS services like Lambda, SNS/SQS, and CloudFormation
+- How to use advanced CLI techniques like filtering and resource cleanup
 
-[Run This Scenario](https://killercoda.com/ethanolivertroy/scenario/aws-fedramp-compliance)
+[Run This Scenario](https://killercoda.com/ethanolivertroy/scenario/aws-cli-sandbox)
 
 ## Compliance Frameworks Covered
 
@@ -113,11 +112,11 @@ These scenarios address security controls from:
   - Kyverno (YAML-based policies)
   - Preventative security controls through admission control
   
-- **AWS Cloud Security:**
-  - IAM least privilege configuration
-  - S3 bucket security (public access, encryption)
-  - CloudTrail logging for audit purposes
-  - Continuous compliance monitoring strategies
+- **AWS CLI and LocalStack:**
+  - Working with common AWS services (S3, IAM, Lambda, DynamoDB)
+  - Creating AWS resource relationships
+  - Infrastructure as Code with CloudFormation
+  - Advanced AWS CLI filtering and querying techniques
 
 ## Getting Started
 
