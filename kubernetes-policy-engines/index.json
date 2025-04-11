@@ -30,6 +30,7 @@
         {"file": "opa-constraints.yaml", "target": "/root", "chmod": "+x"},
         {"file": "kyverno-policies.yaml", "target": "/root", "chmod": "+x"},
         {"file": "policy-audit-tool.sh", "target": "/root", "chmod": "+x"},
+        {"file": "cleanup-helper.sh", "target": "/root", "chmod": "+x"},
         {"file": "nist-policy-controls.md", "target": "/root"},
         {"file": "policy-compliance-examples.md", "target": "/root"}
       ]

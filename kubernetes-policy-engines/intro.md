@@ -11,6 +11,23 @@ This scenario focuses on two leading Kubernetes policy engines:
 
 Both tools integrate with Kubernetes admission controllers to enforce policies at the time of resource creation or modification, implementing preventative controls that ensure resources cannot be deployed unless they meet security requirements.
 
+## Environment Preparation
+
+Before we begin, let's ensure our environment is ready:
+
+```
+# Increase available memory on worker node
+ssh node01 "echo '3' > /proc/sys/vm/drop_caches"
+```{{exec}}
+
+This command helps free up memory on the worker node, which can prevent resource-related issues when installing our policy engines.
+
+> **Note:** If at any point you experience resource issues (like ImagePullBackOff errors), you can run the provided cleanup helper script:
+> ```
+> bash /root/cleanup-helper.sh
+> ```
+> This script will attempt to free up memory and clean up resources to help stabilize the environment.
+
 ## FedRAMP Relevance
 
 Policy engines help implement several key FedRAMP control families:

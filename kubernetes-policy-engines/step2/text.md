@@ -6,24 +6,27 @@ In this step, we will:
 3. Create policies that implement key FedRAMP controls
 4. Test our policies with compliant and non-compliant resources
 
+> **Note:** Like Gatekeeper, Kyverno also requires resources. We've selected a stable version and modified the verification steps to allow you to proceed as long as the key components are installed, even if some pods are not fully ready.
+
 ## Installing Kyverno
 
-Let's install Kyverno using Helm:
+Let's install Kyverno directly with YAML manifests:
 
 ```
-# Add the Kyverno Helm repository
-helm repo add kyverno https://kyverno.github.io/kyverno/
-helm repo update
+# Create namespace
+kubectl create namespace kyverno
 
-# Install Kyverno
-helm install kyverno kyverno/kyverno -n kyverno --create-namespace
+# Install Kyverno v1.10.0 (a stable version)
+kubectl apply -f https://raw.githubusercontent.com/kyverno/kyverno/v1.10.0/config/release/install.yaml
 ```{{exec}}
 
-Wait for Kyverno to be fully deployed:
+Wait for Kyverno to be fully deployed (this may take a few minutes):
 
 ```
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=kyverno -n kyverno --timeout=90s
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=kyverno -n kyverno --timeout=300s
 ```{{exec}}
+
+> **Note:** If the above command times out, you can check the pod status manually with `kubectl get pods -n kyverno` and proceed once the pods are in the Running state.
 
 ## Understanding Kyverno Architecture
 
