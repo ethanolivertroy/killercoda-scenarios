@@ -1,6 +1,6 @@
-# FedRAMP Security Compliance Scenarios
+# Kubernetes & Cloud Interactive Learning Scenarios
 
-This repository contains interactive Killercoda scenarios focused on FedRAMP security compliance for Kubernetes, service mesh environments, and AWS cloud deployments.
+This repository contains interactive Killercoda scenarios focused on Kubernetes security, service mesh configurations, and AWS cloud skills. Most scenarios address FedRAMP security compliance, while the AWS CLI sandbox provides general hands-on practice with AWS services.
 
 ## Available Scenarios
 
@@ -77,15 +77,22 @@ This scenario teaches how to implement and audit Kubernetes policy engines (OPA 
 
 ![AWS](https://img.shields.io/badge/AWS-CLI-FF9900)
 ![LocalStack](https://img.shields.io/badge/LocalStack-Testing-4D27AA)
-![Cloud](https://img.shields.io/badge/Cloud-Sandbox-0078D6)
+![DevOps](https://img.shields.io/badge/DevOps-Skills-0078D6)
 
-This scenario provides a sandbox environment to practice AWS CLI commands using LocalStack, a cloud service emulator that runs in a single container, without incurring AWS costs.
+This scenario provides a hands-on sandbox environment for AWS CLI practice using LocalStack, allowing you to experiment with AWS services locally without any cloud costs. Unlike the other scenarios in this repository, this one focuses purely on AWS skill-building rather than compliance.
 
 **What You'll Learn:**
 - How to set up and use LocalStack to simulate AWS services locally
-- How to work with basic AWS CLI commands for S3, IAM, and DynamoDB
-- How to explore advanced AWS services like Lambda, SNS/SQS, and CloudFormation
-- How to use advanced CLI techniques like filtering and resource cleanup
+- How to work with fundamental AWS CLI commands for S3, IAM, and DynamoDB
+- How to build more complex scenarios with Lambda, SNS/SQS, and API Gateway
+- How to deploy infrastructure as code using CloudFormation templates
+- How to use advanced AWS CLI techniques like JMESPath filtering and resource management
+
+**Ideal For:**
+- Developers wanting to practice AWS CLI commands
+- DevOps engineers building automation scripts
+- Cloud architects testing infrastructure configurations
+- Anyone preparing for AWS certification exams
 
 [Run This Scenario](https://killercoda.com/ethanolivertroy/scenario/aws-cli-sandbox)
 
@@ -112,11 +119,13 @@ These scenarios address security controls from:
   - Kyverno (YAML-based policies)
   - Preventative security controls through admission control
   
-- **AWS CLI and LocalStack:**
-  - Working with common AWS services (S3, IAM, Lambda, DynamoDB)
-  - Creating AWS resource relationships
+- **AWS CLI Sandbox (Non-Compliance Focused):**
+  - Core AWS services and their CLI interactions
+  - Event-driven architectures with SNS and SQS
+  - Serverless application development with Lambda
   - Infrastructure as Code with CloudFormation
-  - Advanced AWS CLI filtering and querying techniques
+  - AWS resource tagging and organization
+  - Advanced JMESPath queries for efficient AWS CLI use
 
 ## Getting Started
 
@@ -126,7 +135,11 @@ These scenarios address security controls from:
 
 ## Contributing
 
-We welcome contributions to enhance these scenarios! Please submit a pull request with any improvements or additional FedRAMP-focused scenarios.
+We welcome contributions to enhance these scenarios! Please submit a pull request with any improvements or additional scenarios related to:
+- FedRAMP compliance for Kubernetes and service mesh environments
+- Cloud native security practices
+- AWS CLI and cloud service automation
+- Infrastructure as Code examples
 
 ## License
 
@@ -134,4 +147,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-*Disclaimer: These scenarios are educational resources intended to help understand FedRAMP compliance requirements in Kubernetes environments. They are not officially endorsed by FedRAMP or NIST and should not be considered as complete guidance for actual FedRAMP assessment preparation.*
+*Disclaimer: Most scenarios in this repository are educational resources intended to help understand FedRAMP compliance requirements in Kubernetes environments. They are not officially endorsed by FedRAMP or NIST and should not be considered as complete guidance for actual FedRAMP assessment preparation. The AWS CLI sandbox is a general skills-building tool not specifically focused on compliance.*
