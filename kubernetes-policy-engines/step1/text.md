@@ -13,9 +13,10 @@ In this step, we will:
 First, let's install OPA Gatekeeper using a pre-configured YAML file with resource optimizations:
 
 ```
-# Apply the Gatekeeper installation
-# Note: If you see an error about webhook configuration, you may need to modify
-# the gatekeeper.yaml file to remove conflicting resource entries
+# First, let's fix a potential issue in the Gatekeeper YAML file
+sed -i 's/- \x27*\x27\n    - pods/- \x27*\x27/' /root/gatekeeper.yaml
+
+# Now apply the Gatekeeper installation
 kubectl apply -f /root/gatekeeper.yaml
 ```{{exec}}
 
