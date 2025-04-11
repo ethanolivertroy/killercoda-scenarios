@@ -15,19 +15,18 @@ kubectl delete pod --field-selector=status.phase==Failed -A
 # Clean up policy artifacts that might be stuck
 echo "Cleaning up policy artifacts..."
 
-# Check if ValidatingAdmissionPolicies exist and clean them up if needed
-if kubectl get validatingadmissionpolicies &>/dev/null; then
-  echo "Cleaning up ValidatingAdmissionPolicies resources..."
+# Check if OPA Gatekeeper is installed and clean up resources if needed
+if kubectl get ns gatekeeper-system &>/dev/null; then
+  echo "Cleaning up Gatekeeper resources..."
   
-  # Delete policy bindings
-  for binding in $(kubectl get validatingadmissionpolicybindings -o name 2>/dev/null); do
-    kubectl delete $binding 2>/dev/null
+  # Delete constraints
+  for constraint in $(kubectl get constraints -o name 2>/dev/null); do
+    kubectl delete $constraint 2>/dev/null
   done
   
-  # Delete policies
-  for policy in $(kubectl get validatingadmissionpolicies -o name 2>/dev/null); do
-    kubectl delete $policy 2>/dev/null
-  done
+  # Scale down gatekeeper to save resources if it's causing issues
+  kubectl scale deployment gatekeeper-controller-manager -n gatekeeper-system --replicas=1 2>/dev/null
+  kubectl scale deployment gatekeeper-audit -n gatekeeper-system --replicas=1 2>/dev/null
 fi
 
 # Check if Kyverno is installed and clean up resources if needed
