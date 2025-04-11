@@ -1,6 +1,6 @@
-# FedRAMP Security Compliance Scenarios for Kubernetes
+# FedRAMP Security Compliance Scenarios
 
-This repository contains interactive Killercoda scenarios focused on FedRAMP security compliance for Kubernetes and service mesh environments.
+This repository contains interactive Killercoda scenarios focused on FedRAMP security compliance for Kubernetes, service mesh environments, and AWS cloud deployments.
 
 ## Available Scenarios
 
@@ -69,6 +69,23 @@ This scenario teaches how to implement and audit Kubernetes policy engines (OPA 
 
 [Run This Scenario](https://killercoda.com/ethanolivertroy/scenario/kubernetes-policy-engines)
 
+### 5. AWS FedRAMP Compliance Assessment with LocalStack
+
+![AWS](https://img.shields.io/badge/AWS-Cloud-FF9900)
+![LocalStack](https://img.shields.io/badge/LocalStack-Testing-4D27AA)
+![FedRAMP Compliance](https://img.shields.io/badge/FedRAMP-Compliance-0078D6)
+![NIST Standards](https://img.shields.io/badge/NIST-800--53-00BFFF)
+
+This scenario teaches how to evaluate AWS environments for FedRAMP compliance using LocalStack, a cloud service emulator that runs in a single container.
+
+**What You'll Learn:**
+- How to set up a simulated AWS environment for FedRAMP compliance testing
+- How to deploy and evaluate AWS resources against key FedRAMP controls
+- How to assess IAM configurations, S3 bucket security, and CloudTrail logging
+- How to generate compliance reports and remediate security issues
+
+[Run This Scenario](https://killercoda.com/ethanolivertroy/scenario/aws-fedramp-compliance)
+
 ## Compliance Frameworks Covered
 
 These scenarios address security controls from:
@@ -91,6 +108,12 @@ These scenarios address security controls from:
   - OPA Gatekeeper (Rego-based policies)
   - Kyverno (YAML-based policies)
   - Preventative security controls through admission control
+  
+- **AWS Cloud Security:**
+  - IAM least privilege configuration
+  - S3 bucket security (public access, encryption)
+  - CloudTrail logging for audit purposes
+  - Continuous compliance monitoring strategies
 
 ## Getting Started
 
