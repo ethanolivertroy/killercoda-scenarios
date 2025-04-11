@@ -44,12 +44,28 @@ Now, let's deploy some AWS resources that represent common cloud architecture pa
 First, let's create an S3 bucket with various security configurations:
 
 ```
-# Create a public S3 bucket (non-compliant)
+# Step 1: Create a non-compliant public S3 bucket
 aws s3 mb s3://non-compliant-public-bucket
-aws s3api put-bucket-acl --bucket non-compliant-public-bucket --acl public-read
+```{{exec}}
 
-# Create a private S3 bucket with encryption (compliant)
+Now let's make this bucket publicly accessible, which violates FedRAMP AC-3 (Access Enforcement):
+
+```
+# Step 2: Set bucket ACL to public-read (non-compliant)
+aws s3api put-bucket-acl --bucket non-compliant-public-bucket --acl public-read
+```{{exec}}
+
+Next, let's create a FedRAMP-compliant S3 bucket as a comparison:
+
+```
+# Step 3: Create a private S3 bucket
 aws s3 mb s3://compliant-private-bucket
+```{{exec}}
+
+Now let's enable encryption on the compliant bucket, which satisfies FedRAMP SC-13 (Cryptographic Protection):
+
+```
+# Step 4: Enable default encryption (compliant)
 aws s3api put-bucket-encryption \
     --bucket compliant-private-bucket \
     --server-side-encryption-configuration '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
@@ -58,11 +74,19 @@ aws s3api put-bucket-encryption \
 Next, let's create some IAM resources:
 
 ```
-# Create IAM users with varying permission policies
+# Step 5: Create an auditor IAM user
 aws iam create-user --user-name fedramp-auditor
-aws iam create-user --user-name admin-user
+```{{exec}}
 
-# Create an IAM policy that follows principle of least privilege (compliant)
+```
+# Step 6: Create an administrator IAM user
+aws iam create-user --user-name admin-user
+```{{exec}}
+
+Now let's create a policy that follows the principle of least privilege (AC-6):
+
+```
+# Step 7: Create a least-privilege policy JSON file (compliant)
 cat <<EOF > /tmp/least-privilege-policy.json
 {
   "Version": "2012-10-17",
@@ -81,12 +105,19 @@ cat <<EOF > /tmp/least-privilege-policy.json
   ]
 }
 EOF
+```{{exec}}
 
+```
+# Step 8: Create the least-privilege policy in IAM
 aws iam create-policy \
     --policy-name LeastPrivilegePolicy \
     --policy-document file:///tmp/least-privilege-policy.json
+```{{exec}}
 
-# Create an overly permissive policy (non-compliant)
+For comparison, let's create a non-compliant policy that violates the principle of least privilege:
+
+```
+# Step 9: Create an overly permissive policy JSON file (non-compliant)
 cat <<EOF > /tmp/overly-permissive-policy.json
 {
   "Version": "2012-10-17",
@@ -99,20 +130,29 @@ cat <<EOF > /tmp/overly-permissive-policy.json
   ]
 }
 EOF
+```{{exec}}
 
+```
+# Step 10: Create the overly permissive policy in IAM
 aws iam create-policy \
     --policy-name OverlyPermissivePolicy \
     --policy-document file:///tmp/overly-permissive-policy.json
 
-# Attach policies to users
-# Get the policy ARNs
+# Step 11: List all our IAM policies to verify creation
 aws iam list-policies --scope Local
+```{{exec}}
 
-# Attach policies directly using the ARN
+Now, let's attach the policies to our users:
+
+```
+# Step 12: Attach the least-privilege policy to the auditor (compliant)
 aws iam attach-user-policy \
     --user-name fedramp-auditor \
     --policy-arn arn:aws:iam::000000000000:policy/LeastPrivilegePolicy
+```{{exec}}
 
+```
+# Step 13: Attach the overly permissive policy to the admin (non-compliant)
 aws iam attach-user-policy \
     --user-name admin-user \
     --policy-arn arn:aws:iam::000000000000:policy/OverlyPermissivePolicy
@@ -121,11 +161,16 @@ aws iam attach-user-policy \
 Let's set up a logging bucket (note: full CloudTrail is not available in LocalStack Community Edition):
 
 ```
-# Create a logging bucket to simulate CloudTrail logs
+# Step 14: Create a logging bucket for audit records
 aws s3 mb s3://cloudtrail-logs
+```{{exec}}
 
-# Create a simple log file to simulate CloudTrail logs
-echo '{
+In real AWS, we would use CloudTrail for comprehensive logging, but in LocalStack Community Edition, we'll simulate this with a sample log file:
+
+```
+# Step 15: Create a sample CloudTrail log entry
+cat <<EOF > /tmp/cloudtrail-sample.json
+{
   "Records": [
     {
       "eventVersion": "1.08",
@@ -137,7 +182,7 @@ echo '{
         "accessKeyId": "EXAMPLE",
         "userName": "admin-user"
       },
-      "eventTime": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'",
+      "eventTime": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
       "eventSource": "s3.amazonaws.com",
       "eventName": "CreateBucket",
       "awsRegion": "us-east-1",
@@ -155,9 +200,14 @@ echo '{
       "recipientAccountId": "000000000000"
     }
   ]
-}' > /tmp/cloudtrail-sample.json
+}
+EOF
+```{{exec}}
 
-# Upload the sample log file to the bucket
+Now let's upload our log file to the bucket in a structure that mimics AWS CloudTrail logs:
+
+```
+# Step 16: Upload the log file to the CloudTrail logs bucket
 aws s3 cp /tmp/cloudtrail-sample.json s3://cloudtrail-logs/AWSLogs/000000000000/CloudTrail/us-east-1/$(date +"%Y/%m/%d")/sample-trail.json
 ```{{exec}}
 
@@ -166,20 +216,26 @@ aws s3 cp /tmp/cloudtrail-sample.json s3://cloudtrail-logs/AWSLogs/000000000000/
 Let's verify that our resources have been created:
 
 ```
-# List S3 buckets
+# Step 17: List all created S3 buckets
 echo "S3 Buckets:"
 aws s3 ls
+```{{exec}}
 
-# List IAM users
-echo -e "\nIAM Users:"
+```
+# Step 18: List all IAM users
+echo "IAM Users:"
 aws iam list-users
+```{{exec}}
 
-# List IAM policies
-echo -e "\nIAM Policies:"
+```
+# Step 19: List all IAM policies
+echo "IAM Policies:"
 aws iam list-policies --scope Local
+```{{exec}}
 
-# Check CloudTrail logs bucket
-echo -e "\nCloudTrail Logs:"
+```
+# Step 20: Verify our CloudTrail log files
+echo "CloudTrail Logs:"
 aws s3 ls s3://cloudtrail-logs/ --recursive
 ```{{exec}}
 

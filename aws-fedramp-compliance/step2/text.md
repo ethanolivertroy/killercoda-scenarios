@@ -25,33 +25,55 @@ FedRAMP controls are based on NIST 800-53 and cover a wide range of security req
 
 Let's use our AWS audit tool to run compliance checks against our deployed resources. This tool evaluates resources against common FedRAMP controls:
 
+Let's start by running an automated compliance assessment using our audit tool:
+
 ```
-# Run the audit tool
+# Step 1: Run the automated FedRAMP compliance audit tool
 bash /root/aws-audit-tool.sh
 ```{{exec}}
 
-This script will:
-1. Connect to LocalStack
-2. Scan resources for compliance issues
-3. Map findings to relevant FedRAMP controls
-4. Generate a report of compliance status
+This script performs the following checks:
+1. Connects to LocalStack AWS environment
+2. Scans all S3 buckets for public access and encryption settings
+3. Evaluates IAM policies for least privilege violations
+4. Verifies CloudTrail logs for audit capabilities
+5. Maps all findings to specific FedRAMP controls
+6. Generates a JSON report with detailed results
 
 ## Analyzing S3 Bucket Compliance
 
 Let's take a closer look at our S3 bucket configurations:
 
 ```
-# Evaluate S3 bucket compliance with FedRAMP controls
+# Step 2: Begin S3 bucket compliance checks
 echo "Checking S3 bucket configurations..."
+```{{exec}}
 
-# Check for public access
-echo -e "\nPublic Access Check (AC-3, AC-6):"
+First, let's check for public access on our buckets. FedRAMP controls AC-3 (Access Enforcement) and AC-6 (Least Privilege) require restricting public access:
+
+```
+# Step 3: Check non-compliant bucket for public access (AC-3, AC-6)
+echo "Checking non-compliant bucket for public access:"
 aws s3api get-bucket-acl --bucket non-compliant-public-bucket | grep "AllUsers"
-aws s3api get-bucket-acl --bucket compliant-private-bucket | grep "AllUsers" || echo "No public access found (compliant)"
+```{{exec}}
 
-# Check for encryption
-echo -e "\nEncryption Check (SC-13):"
-aws s3api get-bucket-encryption --bucket compliant-private-bucket || echo "Failed to get encryption configuration"
+```
+# Step 4: Check compliant bucket for public access (AC-3, AC-6)
+echo "Checking compliant bucket for public access:"
+aws s3api get-bucket-acl --bucket compliant-private-bucket | grep "AllUsers" || echo "No public access found (compliant)"
+```{{exec}}
+
+Now let's check for encryption. FedRAMP control SC-13 (Cryptographic Protection) requires proper encryption of data at rest:
+
+```
+# Step 5: Check compliant bucket for encryption (SC-13)
+echo "Checking compliant bucket for encryption:"
+aws s3api get-bucket-encryption --bucket compliant-private-bucket
+```{{exec}}
+
+```
+# Step 6: Check non-compliant bucket for encryption (SC-13)
+echo "Checking non-compliant bucket for encryption:"
 aws s3api get-bucket-encryption --bucket non-compliant-public-bucket 2>/dev/null || echo "No encryption configured (non-compliant)"
 ```{{exec}}
 
@@ -60,20 +82,40 @@ aws s3api get-bucket-encryption --bucket non-compliant-public-bucket 2>/dev/null
 Now let's analyze our IAM configurations:
 
 ```
-# Evaluate IAM compliance with FedRAMP controls
-echo -e "\nChecking IAM configurations..."
+# Step 7: Begin IAM compliance assessment
+echo "Checking IAM configurations for FedRAMP compliance..."
+```{{exec}}
 
-# Check user policies (AC-6: Least Privilege)
-echo -e "\nIAM Policy Check (AC-6):"
-echo "Policy for admin-user:"
+Now let's analyze the policies attached to our users. FedRAMP control AC-6 (Least Privilege) requires granting only the permissions needed to perform job functions:
+
+```
+# Step 8: Check admin user's policies (AC-6: Least Privilege)
+echo "Examining admin-user policies:"
 aws iam list-attached-user-policies --user-name admin-user
-ADMIN_POLICY_ARN=$(aws iam list-attached-user-policies --user-name admin-user --query 'AttachedPolicies[0].PolicyArn' --output text)
-aws iam get-policy-version --policy-arn $ADMIN_POLICY_ARN --version-id v1
+```{{exec}}
 
-echo -e "\nPolicy for fedramp-auditor:"
+```
+# Step 9: View the admin policy details to check for overly permissive rights
+echo "Viewing admin policy details:"
+aws iam get-policy-version \
+  --policy-arn arn:aws:iam::000000000000:policy/OverlyPermissivePolicy \
+  --version-id v1
+```{{exec}}
+
+Next, let's examine the auditor user's policy, which should follow the principle of least privilege:
+
+```
+# Step 10: Check auditor user's policies (AC-6: Least Privilege)
+echo "Examining fedramp-auditor policies:"
 aws iam list-attached-user-policies --user-name fedramp-auditor
-AUDITOR_POLICY_ARN=$(aws iam list-attached-user-policies --user-name fedramp-auditor --query 'AttachedPolicies[0].PolicyArn' --output text)
-aws iam get-policy-version --policy-arn $AUDITOR_POLICY_ARN --version-id v1
+```{{exec}}
+
+```
+# Step 11: View the auditor policy details to verify least privilege
+echo "Viewing auditor policy details:"
+aws iam get-policy-version \
+  --policy-arn arn:aws:iam::000000000000:policy/LeastPrivilegePolicy \
+  --version-id v1
 ```{{exec}}
 
 ## Analyzing CloudTrail Compliance
@@ -81,16 +123,32 @@ aws iam get-policy-version --policy-arn $AUDITOR_POLICY_ARN --version-id v1
 Let's examine our CloudTrail configuration for audit compliance:
 
 ```
-# Evaluate CloudTrail compliance with FedRAMP controls
-echo -e "\nChecking CloudTrail configurations..."
+# Step 12: Begin CloudTrail audit compliance assessment
+echo "Checking CloudTrail implementation for FedRAMP compliance..."
+```{{exec}}
 
-# Check CloudTrail logs bucket (AU-2: Audit Events)
-echo -e "\nCloudTrail Logs Check (AU-2):"
+FedRAMP control AU-2 (Audit Events) requires comprehensive logging of system events. Let's verify that our CloudTrail logs are correctly stored:
+
+```
+# Step 13: Check CloudTrail logs location and structure (AU-2)
+echo "Verifying CloudTrail log files:"
 aws s3 ls s3://cloudtrail-logs/ --recursive
+```{{exec}}
 
-# Check log content sample
-echo -e "\nCloudTrail Log Content Sample (AU-2):"
+Let's also examine the content of a sample CloudTrail log to ensure it contains the required information:
+
+```
+# Step 14: Review a sample CloudTrail log entry (AU-2, AU-9)
+echo "Viewing sample CloudTrail log content:"
 aws s3 cp s3://cloudtrail-logs/AWSLogs/000000000000/CloudTrail/us-east-1/$(date +"%Y/%m/%d")/sample-trail.json - | jq .
+```{{exec}}
+
+The sample log demonstrates how CloudTrail would record API calls in a production environment, capturing details like:
+- Who performed the action (userIdentity)
+- What action was taken (eventName)
+- When it occurred (eventTime)
+- Where the action was directed (resources)
+- Source IP and user agent information
 ```{{exec}}
 
 ## Compliance Analysis Summary
