@@ -135,16 +135,23 @@ Let's create a simple API endpoint with API Gateway:
 
 ```
 # Create an API
-aws apigateway create-rest-api --name my-test-api
-```{{exec}}
+API_RESPONSE=$(aws apigateway create-rest-api --name my-test-api)
+echo "$API_RESPONSE"
 
-```
-# Get the API ID and root resource ID
-API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`my-test-api`].id' --output text)
-ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/`].id' --output text)
+# Extract the API ID and root resource ID directly using grep and cut to avoid JMESPath issues
+API_ID=$(echo "$API_RESPONSE" | grep -o '"id": "[^"]*' | cut -d'"' -f4)
+ROOT_ID=$(echo "$API_RESPONSE" | grep -o '"rootResourceId": "[^"]*' | cut -d'"' -f4)
 
 echo "API ID: $API_ID"
 echo "Root Resource ID: $ROOT_ID"
+```{{exec}}
+
+```
+# List the APIs to confirm creation
+aws apigateway get-rest-apis
+
+# Get resources for the API we created
+aws apigateway get-resources --rest-api-id $API_ID
 ```{{exec}}
 
 ```
@@ -154,18 +161,29 @@ aws apigateway create-resource \
   --parent-id $ROOT_ID \
   --path-part "hello"
 
-# Get the new resource ID
-RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/hello`].id' --output text)
-echo "Resource ID: $RESOURCE_ID"
+# List resources to get the new resource ID
+RESOURCES_RESPONSE=$(aws apigateway get-resources --rest-api-id $API_ID)
+echo "$RESOURCES_RESPONSE"
 ```{{exec}}
 
 ```
-# Create a GET method
-aws apigateway put-method \
-  --rest-api-id $API_ID \
-  --resource-id $RESOURCE_ID \
-  --http-method GET \
-  --authorization-type NONE
+# Find the resource ID for the /hello path (using grep/cut to avoid JMESPath)
+RESOURCES_LIST=$(aws apigateway get-resources --rest-api-id $API_ID)
+echo "$RESOURCES_LIST" | grep -A 5 "/hello"
+RESOURCE_ID=$(echo "$RESOURCES_LIST" | grep -A 2 "/hello" | grep -o '"id": "[^"]*' | head -1 | cut -d'"' -f4)
+echo "Resource ID for /hello: $RESOURCE_ID"
+
+# Create a GET method if we have a valid resource ID
+if [ ! -z "$RESOURCE_ID" ]; then
+  aws apigateway put-method \
+    --rest-api-id $API_ID \
+    --resource-id $RESOURCE_ID \
+    --http-method GET \
+    --authorization-type NONE
+  echo "GET method created successfully"
+else
+  echo "Resource ID not found, skipping method creation"
+fi
 ```{{exec}}
 
 ## CloudFormation Templates
