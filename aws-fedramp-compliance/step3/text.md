@@ -50,10 +50,10 @@ This report summarizes the FedRAMP compliance status of the assessed AWS environ
   - **Status**: Compliant with AC-6
   - **Implemented Controls**: Specific permissions to specific resources
 
-### CloudTrail
-- **management-events-trail**
+### CloudTrail Logs
+- **cloudtrail-logs bucket**
   - **Status**: Compliant with AU-2, AU-9
-  - **Implemented Controls**: Enabled logging, log storage
+  - **Implemented Controls**: API activity logs stored in S3
 
 ## FedRAMP Control Coverage
 - **AC-2 (Account Management)**: Partially compliant
@@ -139,15 +139,16 @@ cat <<EOF > /tmp/restricted-admin-policy.json
 }
 EOF
 
-# Update policy
-POLICY_ARN=$(aws --endpoint-url=http://localhost:4566 iam list-policies --query 'Policies[?PolicyName==`OverlyPermissivePolicy`].Arn' --output text)
+# Update policy (using hardcoded ARN since the query might not work in Killercoda)
 aws --endpoint-url=http://localhost:4566 iam create-policy-version \
-    --policy-arn $POLICY_ARN \
+    --policy-arn arn:aws:iam::000000000000:policy/OverlyPermissivePolicy \
     --policy-document file:///tmp/restricted-admin-policy.json \
     --set-as-default
 
 # Verify fix
-aws --endpoint-url=http://localhost:4566 iam get-policy-version --policy-arn $POLICY_ARN --version-id v2
+aws --endpoint-url=http://localhost:4566 iam get-policy-version \
+    --policy-arn arn:aws:iam::000000000000:policy/OverlyPermissivePolicy \
+    --version-id v2
 ```{{exec}}
 
 ## Continuous Compliance Monitoring

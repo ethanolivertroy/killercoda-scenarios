@@ -105,25 +105,60 @@ aws --endpoint-url=http://localhost:4566 iam create-policy \
     --policy-document file:///tmp/overly-permissive-policy.json
 
 # Attach policies to users
-LEAST_PRIV_ARN=$(aws --endpoint-url=http://localhost:4566 iam list-policies --query 'Policies[?PolicyName==`LeastPrivilegePolicy`].Arn' --output text)
-OVERLY_PERM_ARN=$(aws --endpoint-url=http://localhost:4566 iam list-policies --query 'Policies[?PolicyName==`OverlyPermissivePolicy`].Arn' --output text)
+# Get the policy ARNs
+aws --endpoint-url=http://localhost:4566 iam list-policies --scope Local
 
-aws --endpoint-url=http://localhost:4566 iam attach-user-policy --user-name fedramp-auditor --policy-arn $LEAST_PRIV_ARN
-aws --endpoint-url=http://localhost:4566 iam attach-user-policy --user-name admin-user --policy-arn $OVERLY_PERM_ARN
+# Attach policies directly using the ARN
+aws --endpoint-url=http://localhost:4566 iam attach-user-policy \
+    --user-name fedramp-auditor \
+    --policy-arn arn:aws:iam::000000000000:policy/LeastPrivilegePolicy
+
+aws --endpoint-url=http://localhost:4566 iam attach-user-policy \
+    --user-name admin-user \
+    --policy-arn arn:aws:iam::000000000000:policy/OverlyPermissivePolicy
 ```{{exec}}
 
-Let's set up CloudTrail for logging and auditing:
+Let's set up a logging bucket (note: full CloudTrail is not available in LocalStack Community Edition):
 
 ```
-# Create a CloudTrail trail (this is simplified for LocalStack)
+# Create a logging bucket to simulate CloudTrail logs
 aws --endpoint-url=http://localhost:4566 s3 mb s3://cloudtrail-logs
-aws --endpoint-url=http://localhost:4566 cloudtrail create-trail \
-    --name management-events-trail \
-    --s3-bucket-name cloudtrail-logs \
-    --is-multi-region-trail
 
-# Start logging
-aws --endpoint-url=http://localhost:4566 cloudtrail start-logging --name management-events-trail
+# Create a simple log file to simulate CloudTrail logs
+echo '{
+  "Records": [
+    {
+      "eventVersion": "1.08",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "EXAMPLE",
+        "arn": "arn:aws:iam::000000000000:user/admin-user",
+        "accountId": "000000000000",
+        "accessKeyId": "EXAMPLE",
+        "userName": "admin-user"
+      },
+      "eventTime": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'",
+      "eventSource": "s3.amazonaws.com",
+      "eventName": "CreateBucket",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "127.0.0.1",
+      "userAgent": "aws-cli/2.0.0",
+      "requestParameters": {
+        "bucketName": "non-compliant-public-bucket"
+      },
+      "responseElements": null,
+      "requestID": "EXAMPLE123456789",
+      "eventID": "EXAMPLE123456789",
+      "readOnly": false,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "000000000000"
+    }
+  ]
+}' > /tmp/cloudtrail-sample.json
+
+# Upload the sample log file to the bucket
+aws --endpoint-url=http://localhost:4566 s3 cp /tmp/cloudtrail-sample.json s3://cloudtrail-logs/AWSLogs/000000000000/CloudTrail/us-east-1/$(date +"%Y/%m/%d")/sample-trail.json
 ```{{exec}}
 
 ## Verifying Resource Deployment
@@ -143,9 +178,9 @@ aws --endpoint-url=http://localhost:4566 iam list-users
 echo -e "\nIAM Policies:"
 aws --endpoint-url=http://localhost:4566 iam list-policies --scope Local
 
-# Check CloudTrail trails
-echo -e "\nCloudTrail Trails:"
-aws --endpoint-url=http://localhost:4566 cloudtrail list-trails
+# Check CloudTrail logs bucket
+echo -e "\nCloudTrail Logs:"
+aws --endpoint-url=http://localhost:4566 s3 ls s3://cloudtrail-logs/ --recursive
 ```{{exec}}
 
 Now that we have deployed our sample AWS resources, we have a mix of compliant and non-compliant configurations that we can evaluate against FedRAMP requirements. In the next step, we'll perform compliance assessments on these resources.

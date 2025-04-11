@@ -112,56 +112,43 @@ for USER in $USERS; do
 EOF
 done
 
-# Evaluate CloudTrail
-echo "Evaluating CloudTrail..."
+# Evaluate CloudTrail logs
+echo "Evaluating CloudTrail logs..."
 if [ "$FIRST_USER" = false ]; then
   echo "," >> $OUTPUT_FILE
 fi
 
-TRAILS=$(aws --endpoint-url=http://localhost:4566 cloudtrail list-trails --query 'Trails[*].Name' --output text)
+# Check for CloudTrail logs in S3
+LOGFILES=$(aws --endpoint-url=http://localhost:4566 s3 ls s3://cloudtrail-logs/ --recursive 2>/dev/null | wc -l)
 
-if [ -z "$TRAILS" ]; then
-  # No trails exist
+if [ "$LOGFILES" -eq 0 ]; then
+  # No logs exist
   cat << EOF >> $OUTPUT_FILE
     {
-      "resourceId": "CloudTrail",
-      "resourceType": "cloudtrail",
+      "resourceId": "CloudTrailLogs",
+      "resourceType": "s3",
       "findings": [
         {
           "controlId": "AU-2",
           "controlName": "Audit Events",
           "status": "NON_COMPLIANT",
-          "details": "No CloudTrail trails configured"
+          "details": "No CloudTrail logs found in S3 bucket"
         }
       ]
     }
 EOF
 else
-  FIRST_TRAIL=true
-  for TRAIL in $TRAILS; do
-    if [ "$FIRST_TRAIL" = true ]; then
-      FIRST_TRAIL=false
-    else
-      echo "," >> $OUTPUT_FILE
-    fi
-    
-    # Check if logging is enabled
-    LOGGING_ENABLED=false
-    if aws --endpoint-url=http://localhost:4566 cloudtrail get-trail-status --name $TRAIL | grep -q '"IsLogging": true'; then
-      LOGGING_ENABLED=true
-    fi
-    
-    # Build findings for this trail
-    cat << EOF >> $OUTPUT_FILE
+  # Build findings for CloudTrail logs
+  cat << EOF >> $OUTPUT_FILE
     {
-      "resourceId": "$TRAIL",
-      "resourceType": "cloudtrail",
+      "resourceId": "CloudTrailLogs",
+      "resourceType": "s3",
       "findings": [
         {
           "controlId": "AU-2",
           "controlName": "Audit Events",
-          "status": $([ "$LOGGING_ENABLED" = true ] && echo '"COMPLIANT"' || echo '"NON_COMPLIANT"'),
-          "details": $([ "$LOGGING_ENABLED" = true ] && echo '"CloudTrail logging enabled"' || echo '"CloudTrail exists but logging not enabled"')
+          "status": "COMPLIANT",
+          "details": "CloudTrail logs found in S3 bucket"
         },
         {
           "controlId": "AU-9",
@@ -172,7 +159,6 @@ else
       ]
     }
 EOF
-  done
 fi
 
 # Close the JSON structure

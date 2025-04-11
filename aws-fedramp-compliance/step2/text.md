@@ -84,13 +84,13 @@ Let's examine our CloudTrail configuration for audit compliance:
 # Evaluate CloudTrail compliance with FedRAMP controls
 echo -e "\nChecking CloudTrail configurations..."
 
-# Check trail configuration (AU-2: Audit Events)
-echo -e "\nCloudTrail Configuration Check (AU-2):"
-aws --endpoint-url=http://localhost:4566 cloudtrail describe-trails
+# Check CloudTrail logs bucket (AU-2: Audit Events)
+echo -e "\nCloudTrail Logs Check (AU-2):"
+aws --endpoint-url=http://localhost:4566 s3 ls s3://cloudtrail-logs/ --recursive
 
-# Check if logging is enabled
-echo -e "\nCloudTrail Logging Status Check (AU-2):"
-aws --endpoint-url=http://localhost:4566 cloudtrail get-trail-status --name management-events-trail
+# Check log content sample
+echo -e "\nCloudTrail Log Content Sample (AU-2):"
+aws --endpoint-url=http://localhost:4566 s3 cp s3://cloudtrail-logs/AWSLogs/000000000000/CloudTrail/us-east-1/$(date +"%Y/%m/%d")/sample-trail.json - | jq .
 ```{{exec}}
 
 ## Compliance Analysis Summary
@@ -105,7 +105,7 @@ Let's summarize our findings:
 | compliant-private-bucket | SC-13 | Compliant | Encryption configured |
 | admin-user IAM policy | AC-6 | Non-Compliant | Overly permissive (* actions) |
 | fedramp-auditor IAM policy | AC-6 | Compliant | Adheres to least privilege |
-| CloudTrail | AU-2 | Compliant | Logging enabled for management events |
-| CloudTrail logs | AU-9 | Compliant | Stored in a bucket |
+| CloudTrail logs | AU-2 | Compliant | Logs stored in S3 bucket |
+| CloudTrail logs | AU-9 | Compliant | Stored in a dedicated bucket |
 
 In the next step, we'll generate comprehensive compliance reports and discuss remediation strategies for the issues we've identified.

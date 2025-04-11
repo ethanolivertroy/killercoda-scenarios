@@ -16,11 +16,11 @@ fi
 BUCKETS=$(aws --endpoint-url=http://localhost:4566 s3 ls | wc -l)
 USERS=$(aws --endpoint-url=http://localhost:4566 iam list-users --query 'Users[*].UserName' --output text | wc -w)
 POLICIES=$(aws --endpoint-url=http://localhost:4566 iam list-policies --scope Local --query 'Policies[*].PolicyName' --output text | wc -w)
-TRAILS=$(aws --endpoint-url=http://localhost:4566 cloudtrail list-trails --query 'Trails[*].Name' --output text | wc -w)
+LOG_FILES=$(aws --endpoint-url=http://localhost:4566 s3 ls s3://cloudtrail-logs/ --recursive | wc -l)
 
-if [ "$BUCKETS" -lt 3 ] || [ "$USERS" -lt 2 ] || [ "$POLICIES" -lt 2 ] || [ "$TRAILS" -lt 1 ]; then
+if [ "$BUCKETS" -lt 3 ] || [ "$USERS" -lt 2 ] || [ "$POLICIES" -lt 2 ] || [ "$LOG_FILES" -lt 1 ]; then
   echo "Not all required resources have been created"
-  echo "Found $BUCKETS buckets (need 3), $USERS users (need 2), $POLICIES policies (need 2), $TRAILS trails (need 1)"
+  echo "Found $BUCKETS buckets (need 3), $USERS users (need 2), $POLICIES policies (need 2), $LOG_FILES log files (need 1)"
   exit 1
 fi
 
