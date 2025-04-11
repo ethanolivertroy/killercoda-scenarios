@@ -6,7 +6,7 @@ echo "This may take a few minutes..."
 
 # Update apt and install required packages
 apt-get update
-apt-get install -y docker.io python3-pip jq curl unzip
+apt-get install -y docker.io python3-pip jq curl unzip zip
 
 # Install AWS CLI
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"

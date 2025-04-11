@@ -20,11 +20,24 @@ def handler(event, context):
     }
 EOF
 
-# Zip the Lambda function
+# Zip the Lambda function (we've installed zip in the setup)
 cd /tmp && zip lambda_function.zip lambda_function.py
+
+# Return to home directory
+cd ~
 ```{{exec}}
 
 ```
+# Create an IAM role for Lambda
+aws iam create-role \
+  --role-name lambda-role \
+  --assume-role-policy-document file:///tmp/lambda-trust-policy.json
+
+# Attach a basic execution policy to the role
+aws iam attach-role-policy \
+  --role-name lambda-role \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
 # Create the Lambda function
 aws lambda create-function \
   --function-name my-test-function \
