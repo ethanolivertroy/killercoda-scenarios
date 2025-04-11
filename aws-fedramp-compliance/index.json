@@ -1,0 +1,41 @@
+{
+  "title": "AWS FedRAMP Compliance Assessment with LocalStack",
+  "description": "Learn how to evaluate AWS environments for FedRAMP compliance using LocalStack for testing and assessment",
+  "details": {
+    "intro": {
+      "text": "intro.md"
+    },
+    "steps": [
+      {
+        "title": "Setting Up LocalStack and AWS Environment",
+        "text": "step1/text.md",
+        "verify": "step1/verify.sh"
+      },
+      {
+        "title": "Evaluating AWS Resources Against FedRAMP Controls",
+        "text": "step2/text.md",
+        "verify": "step2/verify.sh"
+      },
+      {
+        "title": "Generating FedRAMP Compliance Reports",
+        "text": "step3/text.md",
+        "verify": "step3/verify.sh"
+      }
+    ],
+    "finish": {
+      "text": "finish.md"
+    },
+    "assets": {
+      "host01": [
+        {"file": "setup.sh", "target": "/root", "chmod": "+x"},
+        {"file": "aws-audit-tool.sh", "target": "/root", "chmod": "+x"},
+        {"file": "fedramp-controls.json", "target": "/root", "chmod": "+x"},
+        {"file": "aws-resources.template", "target": "/root"},
+        {"file": "compliance-checklist.md", "target": "/root"}
+      ]
+    }
+  },
+  "backend": {
+    "imageid": "ubuntu:2004"
+  }
+}

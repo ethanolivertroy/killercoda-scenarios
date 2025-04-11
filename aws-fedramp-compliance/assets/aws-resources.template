@@ -1,0 +1,108 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "AWS resources for FedRAMP compliance assessment",
+  "Resources": {
+    "NonCompliantPublicBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "non-compliant-public-bucket",
+        "AccessControl": "PublicRead"
+      }
+    },
+    "CompliantPrivateBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "compliant-private-bucket",
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "CloudTrailBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "cloudtrail-logs",
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "FedRAMPAuditor": {
+      "Type": "AWS::IAM::User",
+      "Properties": {
+        "UserName": "fedramp-auditor"
+      }
+    },
+    "AdminUser": {
+      "Type": "AWS::IAM::User",
+      "Properties": {
+        "UserName": "admin-user"
+      }
+    },
+    "LeastPrivilegePolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "LeastPrivilegePolicy",
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:GetObject",
+                "s3:ListBucket"
+              ],
+              "Resource": [
+                "arn:aws:s3:::compliant-private-bucket",
+                "arn:aws:s3:::compliant-private-bucket/*"
+              ]
+            }
+          ]
+        },
+        "Users": [
+          {"Ref": "FedRAMPAuditor"}
+        ]
+      }
+    },
+    "OverlyPermissivePolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "OverlyPermissivePolicy",
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "*",
+              "Resource": "*"
+            }
+          ]
+        },
+        "Users": [
+          {"Ref": "AdminUser"}
+        ]
+      }
+    },
+    "ManagementEventsTrail": {
+      "Type": "AWS::CloudTrail::Trail",
+      "Properties": {
+        "TrailName": "management-events-trail",
+        "S3BucketName": {"Ref": "CloudTrailBucket"},
+        "IsMultiRegionTrail": true,
+        "IsLogging": true
+      }
+    }
+  }
+}
