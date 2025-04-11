@@ -803,7 +803,6 @@ webhooks:
     - UPDATE
     resources:
     - '*'
-    - pods
   sideEffects: None
   timeoutSeconds: 3
 - admissionReviewVersions:
