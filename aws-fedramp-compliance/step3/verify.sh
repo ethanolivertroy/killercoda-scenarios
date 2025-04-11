@@ -26,8 +26,8 @@ fi
 
 # Check remediation was performed 
 # (public access removed from bucket and encryption enabled)
-PUBLIC_ACCESS=$(aws --endpoint-url=http://localhost:4566 s3api get-bucket-acl --bucket non-compliant-public-bucket 2>/dev/null | grep -c "AllUsers" || echo "0")
-HAS_ENCRYPTION=$(aws --endpoint-url=http://localhost:4566 s3api get-bucket-encryption --bucket non-compliant-public-bucket 2>/dev/null | grep -c "AES256" || echo "0")
+PUBLIC_ACCESS=$(aws s3api get-bucket-acl --bucket non-compliant-public-bucket 2>/dev/null | grep -c "AllUsers" || echo "0")
+HAS_ENCRYPTION=$(aws s3api get-bucket-encryption --bucket non-compliant-public-bucket 2>/dev/null | grep -c "AES256" || echo "0")
 
 if [ "$PUBLIC_ACCESS" -gt 0 ] || [ "$HAS_ENCRYPTION" -eq 0 ]; then
   echo "Remediation was not completed successfully"

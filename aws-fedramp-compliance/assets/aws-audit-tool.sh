@@ -13,7 +13,7 @@ echo '{
 
 # Evaluate S3 buckets
 echo "Evaluating S3 buckets..."
-BUCKETS=$(aws --endpoint-url=http://localhost:4566 s3api list-buckets --query 'Buckets[*].Name' --output text)
+BUCKETS=$(aws s3api list-buckets --query 'Buckets[*].Name' --output text)
 FIRST_BUCKET=true
 
 for BUCKET in $BUCKETS; do
@@ -24,11 +24,11 @@ for BUCKET in $BUCKETS; do
   fi
   
   # Get ACL to check for public access
-  PUBLIC_ACCESS=$(aws --endpoint-url=http://localhost:4566 s3api get-bucket-acl --bucket $BUCKET | grep -c "AllUsers" || echo "0")
+  PUBLIC_ACCESS=$(aws s3api get-bucket-acl --bucket $BUCKET | grep -c "AllUsers" || echo "0")
   
   # Check for encryption
   HAS_ENCRYPTION=false
-  if aws --endpoint-url=http://localhost:4566 s3api get-bucket-encryption --bucket $BUCKET &>/dev/null; then
+  if aws s3api get-bucket-encryption --bucket $BUCKET &>/dev/null; then
     HAS_ENCRYPTION=true
   fi
   
@@ -67,7 +67,7 @@ if [ "$FIRST_BUCKET" = false ]; then
   echo "," >> $OUTPUT_FILE
 fi
 
-USERS=$(aws --endpoint-url=http://localhost:4566 iam list-users --query 'Users[*].UserName' --output text)
+USERS=$(aws iam list-users --query 'Users[*].UserName' --output text)
 FIRST_USER=true
 
 for USER in $USERS; do
@@ -78,7 +78,7 @@ for USER in $USERS; do
   fi
   
   # Get attached policies
-  POLICY_ARNS=$(aws --endpoint-url=http://localhost:4566 iam list-attached-user-policies --user-name $USER --query 'AttachedPolicies[*].PolicyArn' --output text)
+  POLICY_ARNS=$(aws iam list-attached-user-policies --user-name $USER --query 'AttachedPolicies[*].PolicyArn' --output text)
   
   # Initialize as compliant
   IS_COMPLIANT=true
@@ -86,7 +86,7 @@ for USER in $USERS; do
   
   # Check each policy for compliance
   for POLICY_ARN in $POLICY_ARNS; do
-    POLICY_DOC=$(aws --endpoint-url=http://localhost:4566 iam get-policy-version --policy-arn $POLICY_ARN --version-id v1)
+    POLICY_DOC=$(aws iam get-policy-version --policy-arn $POLICY_ARN --version-id v1)
     
     # Check for overly permissive "*" actions
     if echo "$POLICY_DOC" | grep -q '"Action": "\*"'; then
@@ -119,7 +119,7 @@ if [ "$FIRST_USER" = false ]; then
 fi
 
 # Check for CloudTrail logs in S3
-LOGFILES=$(aws --endpoint-url=http://localhost:4566 s3 ls s3://cloudtrail-logs/ --recursive 2>/dev/null | wc -l)
+LOGFILES=$(aws s3 ls s3://cloudtrail-logs/ --recursive 2>/dev/null | wc -l)
 
 if [ "$LOGFILES" -eq 0 ]; then
   # No logs exist

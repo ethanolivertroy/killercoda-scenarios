@@ -91,19 +91,19 @@ Now, let's apply some remediation strategies to fix non-compliant resources:
 ```
 # 1. Remediate S3 public bucket issue
 echo "Remediating public S3 bucket..."
-aws --endpoint-url=http://localhost:4566 s3api put-bucket-acl --bucket non-compliant-public-bucket --acl private
+aws s3api put-bucket-acl --bucket non-compliant-public-bucket --acl private
 
 # Verify fix
-aws --endpoint-url=http://localhost:4566 s3api get-bucket-acl --bucket non-compliant-public-bucket | grep "AllUsers" || echo "Public access removed successfully"
+aws s3api get-bucket-acl --bucket non-compliant-public-bucket | grep "AllUsers" || echo "Public access removed successfully"
 
 # 2. Enable encryption on non-compliant bucket
 echo -e "\nEnabling encryption on non-compliant bucket..."
-aws --endpoint-url=http://localhost:4566 s3api put-bucket-encryption \
+aws s3api put-bucket-encryption \
     --bucket non-compliant-public-bucket \
     --server-side-encryption-configuration '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
 
 # Verify fix
-aws --endpoint-url=http://localhost:4566 s3api get-bucket-encryption --bucket non-compliant-public-bucket
+aws s3api get-bucket-encryption --bucket non-compliant-public-bucket
 
 # 3. Fix overly permissive IAM policy
 echo -e "\nRemediating overly permissive IAM policy..."
@@ -140,13 +140,13 @@ cat <<EOF > /tmp/restricted-admin-policy.json
 EOF
 
 # Update policy (using hardcoded ARN since the query might not work in Killercoda)
-aws --endpoint-url=http://localhost:4566 iam create-policy-version \
+aws iam create-policy-version \
     --policy-arn arn:aws:iam::000000000000:policy/OverlyPermissivePolicy \
     --policy-document file:///tmp/restricted-admin-policy.json \
     --set-as-default
 
 # Verify fix
-aws --endpoint-url=http://localhost:4566 iam get-policy-version \
+aws iam get-policy-version \
     --policy-arn arn:aws:iam::000000000000:policy/OverlyPermissivePolicy \
     --version-id v2
 ```{{exec}}
@@ -172,8 +172,8 @@ echo "Running continuous compliance check at \$(date)"
 
 # Check S3 Buckets for public access
 echo "Checking S3 buckets for public access..."
-aws --endpoint-url=http://localhost:4566 s3api list-buckets --query 'Buckets[*].Name' --output text | tr '\t' '\n' | while read bucket; do
-  if aws --endpoint-url=http://localhost:4566 s3api get-bucket-acl --bucket \$bucket | grep -q "AllUsers"; then
+aws s3api list-buckets --query 'Buckets[*].Name' --output text | tr '\t' '\n' | while read bucket; do
+  if aws s3api get-bucket-acl --bucket \$bucket | grep -q "AllUsers"; then
     echo "VIOLATION: Bucket \$bucket has public access"
   else
     echo "COMPLIANT: Bucket \$bucket has no public access"
@@ -182,8 +182,8 @@ done
 
 # Check S3 Buckets for encryption
 echo -e "\nChecking S3 buckets for encryption..."
-aws --endpoint-url=http://localhost:4566 s3api list-buckets --query 'Buckets[*].Name' --output text | tr '\t' '\n' | while read bucket; do
-  if aws --endpoint-url=http://localhost:4566 s3api get-bucket-encryption --bucket \$bucket &>/dev/null; then
+aws s3api list-buckets --query 'Buckets[*].Name' --output text | tr '\t' '\n' | while read bucket; do
+  if aws s3api get-bucket-encryption --bucket \$bucket &>/dev/null; then
     echo "COMPLIANT: Bucket \$bucket has encryption enabled"
   else
     echo "VIOLATION: Bucket \$bucket has no encryption"
@@ -192,11 +192,11 @@ done
 
 # Check IAM policies for least privilege
 echo -e "\nChecking IAM policies for least privilege..."
-aws --endpoint-url=http://localhost:4566 iam list-policies --scope Local --query 'Policies[*].[PolicyName, Arn]' --output text | while read line; do
+aws iam list-policies --scope Local --query 'Policies[*].[PolicyName, Arn]' --output text | while read line; do
   policy_name=\$(echo \$line | cut -d' ' -f1)
   policy_arn=\$(echo \$line | cut -d' ' -f2)
   
-  if aws --endpoint-url=http://localhost:4566 iam get-policy-version --policy-arn \$policy_arn --version-id v1 | grep -q '"Action": "\*"'; then
+  if aws iam get-policy-version --policy-arn \$policy_arn --version-id v1 | grep -q '"Action": "\*"'; then
     echo "VIOLATION: Policy \$policy_name has overly permissive actions"
   else
     echo "COMPLIANT: Policy \$policy_name follows least privilege"

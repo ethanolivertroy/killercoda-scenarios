@@ -32,12 +32,23 @@ cat > ~/.aws/config << EOF
 [default]
 region = us-east-1
 output = json
+endpoint_url = http://localhost:4566
 EOF
 
 cat > ~/.aws/credentials << EOF
 [default]
 aws_access_key_id = test
 aws_secret_access_key = test
+EOF
+
+# Set up environment variables for easier AWS CLI usage
+echo 'export AWS_ENDPOINT_URL=http://localhost:4566' >> ~/.bashrc
+echo 'alias aws="aws --endpoint-url=\$AWS_ENDPOINT_URL"' >> ~/.bashrc
+source ~/.bashrc
+
+# Create a .env file in root directory
+cat > /root/.env << EOF
+AWS_ENDPOINT_URL=http://localhost:4566
 EOF
 
 # Create dummy compliance-results.json file for verification

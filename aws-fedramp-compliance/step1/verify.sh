@@ -7,16 +7,16 @@ if ! docker ps | grep -q localstack; then
 fi
 
 # Check if we can connect to LocalStack
-if ! aws --endpoint-url=http://localhost:4566 s3 ls &>/dev/null; then
+if ! aws s3 ls &>/dev/null; then
   echo "Cannot connect to LocalStack endpoint"
   exit 1
 fi
 
 # Check if resources were created
-BUCKETS=$(aws --endpoint-url=http://localhost:4566 s3 ls | wc -l)
-USERS=$(aws --endpoint-url=http://localhost:4566 iam list-users --query 'Users[*].UserName' --output text | wc -w)
-POLICIES=$(aws --endpoint-url=http://localhost:4566 iam list-policies --scope Local --query 'Policies[*].PolicyName' --output text | wc -w)
-LOG_FILES=$(aws --endpoint-url=http://localhost:4566 s3 ls s3://cloudtrail-logs/ --recursive | wc -l)
+BUCKETS=$(aws s3 ls | wc -l)
+USERS=$(aws iam list-users --query 'Users[*].UserName' --output text | wc -w)
+POLICIES=$(aws iam list-policies --scope Local --query 'Policies[*].PolicyName' --output text | wc -w)
+LOG_FILES=$(aws s3 ls s3://cloudtrail-logs/ --recursive | wc -l)
 
 if [ "$BUCKETS" -lt 3 ] || [ "$USERS" -lt 2 ] || [ "$POLICIES" -lt 2 ] || [ "$LOG_FILES" -lt 1 ]; then
   echo "Not all required resources have been created"

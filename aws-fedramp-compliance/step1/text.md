@@ -16,7 +16,7 @@ docker ps | grep localstack
 You should see the LocalStack container running. Next, let's check that the AWS CLI is properly configured to work with LocalStack:
 
 ```
-aws --endpoint-url=http://localhost:4566 s3 ls
+aws s3 ls
 ```{{exec}}
 
 If LocalStack is running correctly, this command should execute without errors (though it may show no buckets yet).
@@ -45,12 +45,12 @@ First, let's create an S3 bucket with various security configurations:
 
 ```
 # Create a public S3 bucket (non-compliant)
-aws --endpoint-url=http://localhost:4566 s3 mb s3://non-compliant-public-bucket
-aws --endpoint-url=http://localhost:4566 s3api put-bucket-acl --bucket non-compliant-public-bucket --acl public-read
+aws s3 mb s3://non-compliant-public-bucket
+aws s3api put-bucket-acl --bucket non-compliant-public-bucket --acl public-read
 
 # Create a private S3 bucket with encryption (compliant)
-aws --endpoint-url=http://localhost:4566 s3 mb s3://compliant-private-bucket
-aws --endpoint-url=http://localhost:4566 s3api put-bucket-encryption \
+aws s3 mb s3://compliant-private-bucket
+aws s3api put-bucket-encryption \
     --bucket compliant-private-bucket \
     --server-side-encryption-configuration '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
 ```{{exec}}
@@ -59,8 +59,8 @@ Next, let's create some IAM resources:
 
 ```
 # Create IAM users with varying permission policies
-aws --endpoint-url=http://localhost:4566 iam create-user --user-name fedramp-auditor
-aws --endpoint-url=http://localhost:4566 iam create-user --user-name admin-user
+aws iam create-user --user-name fedramp-auditor
+aws iam create-user --user-name admin-user
 
 # Create an IAM policy that follows principle of least privilege (compliant)
 cat <<EOF > /tmp/least-privilege-policy.json
@@ -82,7 +82,7 @@ cat <<EOF > /tmp/least-privilege-policy.json
 }
 EOF
 
-aws --endpoint-url=http://localhost:4566 iam create-policy \
+aws iam create-policy \
     --policy-name LeastPrivilegePolicy \
     --policy-document file:///tmp/least-privilege-policy.json
 
@@ -100,20 +100,20 @@ cat <<EOF > /tmp/overly-permissive-policy.json
 }
 EOF
 
-aws --endpoint-url=http://localhost:4566 iam create-policy \
+aws iam create-policy \
     --policy-name OverlyPermissivePolicy \
     --policy-document file:///tmp/overly-permissive-policy.json
 
 # Attach policies to users
 # Get the policy ARNs
-aws --endpoint-url=http://localhost:4566 iam list-policies --scope Local
+aws iam list-policies --scope Local
 
 # Attach policies directly using the ARN
-aws --endpoint-url=http://localhost:4566 iam attach-user-policy \
+aws iam attach-user-policy \
     --user-name fedramp-auditor \
     --policy-arn arn:aws:iam::000000000000:policy/LeastPrivilegePolicy
 
-aws --endpoint-url=http://localhost:4566 iam attach-user-policy \
+aws iam attach-user-policy \
     --user-name admin-user \
     --policy-arn arn:aws:iam::000000000000:policy/OverlyPermissivePolicy
 ```{{exec}}
@@ -122,7 +122,7 @@ Let's set up a logging bucket (note: full CloudTrail is not available in LocalSt
 
 ```
 # Create a logging bucket to simulate CloudTrail logs
-aws --endpoint-url=http://localhost:4566 s3 mb s3://cloudtrail-logs
+aws s3 mb s3://cloudtrail-logs
 
 # Create a simple log file to simulate CloudTrail logs
 echo '{
@@ -158,7 +158,7 @@ echo '{
 }' > /tmp/cloudtrail-sample.json
 
 # Upload the sample log file to the bucket
-aws --endpoint-url=http://localhost:4566 s3 cp /tmp/cloudtrail-sample.json s3://cloudtrail-logs/AWSLogs/000000000000/CloudTrail/us-east-1/$(date +"%Y/%m/%d")/sample-trail.json
+aws s3 cp /tmp/cloudtrail-sample.json s3://cloudtrail-logs/AWSLogs/000000000000/CloudTrail/us-east-1/$(date +"%Y/%m/%d")/sample-trail.json
 ```{{exec}}
 
 ## Verifying Resource Deployment
@@ -168,19 +168,19 @@ Let's verify that our resources have been created:
 ```
 # List S3 buckets
 echo "S3 Buckets:"
-aws --endpoint-url=http://localhost:4566 s3 ls
+aws s3 ls
 
 # List IAM users
 echo -e "\nIAM Users:"
-aws --endpoint-url=http://localhost:4566 iam list-users
+aws iam list-users
 
 # List IAM policies
 echo -e "\nIAM Policies:"
-aws --endpoint-url=http://localhost:4566 iam list-policies --scope Local
+aws iam list-policies --scope Local
 
 # Check CloudTrail logs bucket
 echo -e "\nCloudTrail Logs:"
-aws --endpoint-url=http://localhost:4566 s3 ls s3://cloudtrail-logs/ --recursive
+aws s3 ls s3://cloudtrail-logs/ --recursive
 ```{{exec}}
 
 Now that we have deployed our sample AWS resources, we have a mix of compliant and non-compliant configurations that we can evaluate against FedRAMP requirements. In the next step, we'll perform compliance assessments on these resources.

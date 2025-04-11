@@ -24,10 +24,13 @@ bash /root/setup.sh
 
 This script will:
 - Install Docker (required for LocalStack)
-- Install AWS CLI and configure it to work with LocalStack
+- Install AWS CLI and configure it to work with LocalStack 
+- Set up environment variables for easier AWS CLI usage
 - Install necessary Python dependencies
 - Start LocalStack container
 - Install utility tools for compliance assessment
+
+> **Note:** For simplicity, we've configured the AWS CLI to automatically use the LocalStack endpoint. This allows us to use standard AWS CLI commands without having to specify the `--endpoint-url` parameter each time.
 
 ## FedRAMP Relevance
 

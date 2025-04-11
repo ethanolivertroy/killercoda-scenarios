@@ -46,13 +46,13 @@ echo "Checking S3 bucket configurations..."
 
 # Check for public access
 echo -e "\nPublic Access Check (AC-3, AC-6):"
-aws --endpoint-url=http://localhost:4566 s3api get-bucket-acl --bucket non-compliant-public-bucket | grep "AllUsers"
-aws --endpoint-url=http://localhost:4566 s3api get-bucket-acl --bucket compliant-private-bucket | grep "AllUsers" || echo "No public access found (compliant)"
+aws s3api get-bucket-acl --bucket non-compliant-public-bucket | grep "AllUsers"
+aws s3api get-bucket-acl --bucket compliant-private-bucket | grep "AllUsers" || echo "No public access found (compliant)"
 
 # Check for encryption
 echo -e "\nEncryption Check (SC-13):"
-aws --endpoint-url=http://localhost:4566 s3api get-bucket-encryption --bucket compliant-private-bucket || echo "Failed to get encryption configuration"
-aws --endpoint-url=http://localhost:4566 s3api get-bucket-encryption --bucket non-compliant-public-bucket 2>/dev/null || echo "No encryption configured (non-compliant)"
+aws s3api get-bucket-encryption --bucket compliant-private-bucket || echo "Failed to get encryption configuration"
+aws s3api get-bucket-encryption --bucket non-compliant-public-bucket 2>/dev/null || echo "No encryption configured (non-compliant)"
 ```{{exec}}
 
 ## Analyzing IAM Compliance
@@ -66,14 +66,14 @@ echo -e "\nChecking IAM configurations..."
 # Check user policies (AC-6: Least Privilege)
 echo -e "\nIAM Policy Check (AC-6):"
 echo "Policy for admin-user:"
-aws --endpoint-url=http://localhost:4566 iam list-attached-user-policies --user-name admin-user
-ADMIN_POLICY_ARN=$(aws --endpoint-url=http://localhost:4566 iam list-attached-user-policies --user-name admin-user --query 'AttachedPolicies[0].PolicyArn' --output text)
-aws --endpoint-url=http://localhost:4566 iam get-policy-version --policy-arn $ADMIN_POLICY_ARN --version-id v1
+aws iam list-attached-user-policies --user-name admin-user
+ADMIN_POLICY_ARN=$(aws iam list-attached-user-policies --user-name admin-user --query 'AttachedPolicies[0].PolicyArn' --output text)
+aws iam get-policy-version --policy-arn $ADMIN_POLICY_ARN --version-id v1
 
 echo -e "\nPolicy for fedramp-auditor:"
-aws --endpoint-url=http://localhost:4566 iam list-attached-user-policies --user-name fedramp-auditor
-AUDITOR_POLICY_ARN=$(aws --endpoint-url=http://localhost:4566 iam list-attached-user-policies --user-name fedramp-auditor --query 'AttachedPolicies[0].PolicyArn' --output text)
-aws --endpoint-url=http://localhost:4566 iam get-policy-version --policy-arn $AUDITOR_POLICY_ARN --version-id v1
+aws iam list-attached-user-policies --user-name fedramp-auditor
+AUDITOR_POLICY_ARN=$(aws iam list-attached-user-policies --user-name fedramp-auditor --query 'AttachedPolicies[0].PolicyArn' --output text)
+aws iam get-policy-version --policy-arn $AUDITOR_POLICY_ARN --version-id v1
 ```{{exec}}
 
 ## Analyzing CloudTrail Compliance
@@ -86,11 +86,11 @@ echo -e "\nChecking CloudTrail configurations..."
 
 # Check CloudTrail logs bucket (AU-2: Audit Events)
 echo -e "\nCloudTrail Logs Check (AU-2):"
-aws --endpoint-url=http://localhost:4566 s3 ls s3://cloudtrail-logs/ --recursive
+aws s3 ls s3://cloudtrail-logs/ --recursive
 
 # Check log content sample
 echo -e "\nCloudTrail Log Content Sample (AU-2):"
-aws --endpoint-url=http://localhost:4566 s3 cp s3://cloudtrail-logs/AWSLogs/000000000000/CloudTrail/us-east-1/$(date +"%Y/%m/%d")/sample-trail.json - | jq .
+aws s3 cp s3://cloudtrail-logs/AWSLogs/000000000000/CloudTrail/us-east-1/$(date +"%Y/%m/%d")/sample-trail.json - | jq .
 ```{{exec}}
 
 ## Compliance Analysis Summary
